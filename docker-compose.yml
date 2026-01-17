@@ -86,6 +86,21 @@ services:
     volumes:
       - ./backend:/app
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: reddit_mvp_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   static_volume:
