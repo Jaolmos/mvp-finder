@@ -77,7 +77,7 @@ class FavoriteToggleSchema(Schema):
 # Endpoints
 @router.get("/", response=List[PostListSchema], auth=JWTAuth())
 @paginate(PageNumberPagination, page_size=20)
-def list_posts(request, filters: PostFilterSchema = FilterSchema()):
+def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
     """
     Listar posts con filtros y paginación.
 
@@ -98,6 +98,20 @@ def list_posts(request, filters: PostFilterSchema = FilterSchema()):
     if filters.search:
         posts = posts.filter(title__icontains=filters.search) | posts.filter(content__icontains=filters.search)
 
+    return posts
+
+
+@router.get("/favorites/", response=List[PostListSchema], auth=JWTAuth())
+@paginate(PageNumberPagination, page_size=20)
+def list_favorites(request):
+    """
+    Listar posts favoritos del usuario actual.
+
+    Requiere autenticación JWT.
+    """
+    user = request.auth
+    favorites = Favorite.objects.filter(user=user).select_related('post__subreddit')
+    posts = [fav.post for fav in favorites]
     return posts
 
 
@@ -136,17 +150,3 @@ def toggle_favorite(request, post_id: int):
         "favorited": True,
         "message": "Post añadido a favoritos"
     }
-
-
-@router.get("/favorites/", response=List[PostListSchema], auth=JWTAuth())
-@paginate(PageNumberPagination, page_size=20)
-def list_favorites(request):
-    """
-    Listar posts favoritos del usuario actual.
-
-    Requiere autenticación JWT.
-    """
-    user = request.auth
-    favorites = Favorite.objects.filter(user=user).select_related('post__subreddit')
-    posts = [fav.post for fav in favorites]
-    return posts
