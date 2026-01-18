@@ -22,5 +22,5 @@ USER appuser
 # Exponer puerto
 EXPOSE 8000
 
-# Comando por defecto
-CMD ["uv", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Comando por defecto (desarrollo con auto-reload y static files)
+CMD ["uv", "run", "manage.py", "runserver", "0.0.0.0:8000"]
