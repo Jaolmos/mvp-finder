@@ -18,7 +18,7 @@ const showOnlyAnalyzed = ref(false)
 const availableSubreddits = computed(() => {
   const subreddits = new Set<string>()
   postsStore.posts.forEach((post) => {
-    subreddits.add(post.subreddit)
+    subreddits.add(post.subreddit.name)
   })
   return Array.from(subreddits).sort()
 })

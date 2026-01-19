@@ -1,17 +1,31 @@
 import api from './api'
 
+export interface Subreddit {
+  id: number
+  name: string
+}
+
 export interface Post {
   id: number
+  reddit_id: string
+  subreddit: Subreddit
   title: string
-  content: string
+  content?: string // Solo en detalle
   author: string
   score: number
   url: string
-  created_at: string
-  subreddit: string
-  category?: Category
+  created_at_reddit: string
+  created_at?: string // Solo en detalle
+  updated_at?: string // Solo en detalle
+  analyzed: boolean
   summary?: string
-  is_favorite: boolean
+  problem?: string // Solo en detalle
+  mvp_idea?: string // Solo en detalle
+  target_audience?: string // Solo en detalle
+  potential_score?: number | null
+  tags?: string
+  analyzed_at?: string | null // Solo en detalle
+  is_favorite?: boolean
 }
 
 export interface Category {

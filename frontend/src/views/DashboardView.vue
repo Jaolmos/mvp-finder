@@ -17,7 +17,7 @@ onMounted(async () => {
 const stats = computed(() => {
   const totalPosts = postsStore.pagination.count
   const analyzedPosts = postsStore.posts.filter((p) => p.summary).length
-  const subreddits = new Set(postsStore.posts.map((p) => p.subreddit)).size
+  const subreddits = new Set(postsStore.posts.map((p) => p.subreddit.name)).size
 
   return {
     total: totalPosts,
