@@ -35,6 +35,7 @@ class PostListSchema(Schema):
     potential_score: Optional[int] = None
     tags: str
     summary: str
+    is_favorite: bool = False
 
 
 class PostDetailSchema(Schema):
@@ -56,6 +57,7 @@ class PostDetailSchema(Schema):
     tags: str
     analyzed: bool
     analyzed_at: Optional[datetime] = None
+    is_favorite: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -66,11 +68,12 @@ class PostFilterSchema(FilterSchema):
     analyzed: Optional[bool] = None
     min_score: Optional[int] = None
     search: Optional[str] = None
+    is_favorite: Optional[bool] = None
 
 
 class FavoriteToggleSchema(Schema):
     """Schema para respuesta de toggle favorite."""
-    favorited: bool
+    is_favorite: bool
     message: str
 
 
@@ -83,7 +86,12 @@ def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
 
     Requiere autenticación JWT.
     """
-    posts = Post.objects.select_related('subreddit').all()
+    from django.db.models import Exists, OuterRef
+
+    user = request.auth
+    posts = Post.objects.select_related('subreddit').annotate(
+        is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
+    ).all()
 
     # Aplicar filtros
     if filters.subreddit:
@@ -98,6 +106,9 @@ def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
     if filters.search:
         posts = posts.filter(title__icontains=filters.search) | posts.filter(content__icontains=filters.search)
 
+    if filters.is_favorite:
+        posts = posts.filter(is_favorite=True)
+
     return posts
 
 
@@ -109,9 +120,15 @@ def list_favorites(request):
 
     Requiere autenticación JWT.
     """
+    from django.db.models import Exists, OuterRef, Value
+    from django.db.models.functions import Coalesce
+
     user = request.auth
-    favorites = Favorite.objects.filter(user=user).select_related('post__subreddit')
-    posts = [fav.post for fav in favorites]
+    # Obtener los IDs de posts favoritos
+    favorite_ids = Favorite.objects.filter(user=user).values_list('post_id', flat=True)
+    posts = Post.objects.filter(id__in=favorite_ids).select_related('subreddit').annotate(
+        is_favorite=Value(True)
+    )
     return posts
 
 
@@ -122,7 +139,15 @@ def get_post(request, post_id: int):
 
     Requiere autenticación JWT.
     """
-    post = get_object_or_404(Post.objects.select_related('subreddit'), id=post_id)
+    from django.db.models import Exists, OuterRef
+
+    user = request.auth
+    post = get_object_or_404(
+        Post.objects.select_related('subreddit').annotate(
+            is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
+        ),
+        id=post_id
+    )
     return post
 
 
@@ -142,11 +167,11 @@ def toggle_favorite(request, post_id: int):
         # Ya existía, lo eliminamos
         favorite.delete()
         return {
-            "favorited": False,
+            "is_favorite": False,
             "message": "Post eliminado de favoritos"
         }
 
     return {
-        "favorited": True,
+        "is_favorite": True,
         "message": "Post añadido a favoritos"
     }
