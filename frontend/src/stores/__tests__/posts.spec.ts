@@ -18,21 +18,21 @@ import postService from '@/services/posts'
 describe('usePostsStore', () => {
   const mockPost: Post = {
     id: 1,
+    reddit_id: 'abc123',
     title: 'Test Post',
     content: 'Test content',
     author: 'testuser',
     score: 100,
     url: 'https://reddit.com/test',
-    created_at: '2024-01-01T00:00:00Z',
-    subreddit: 'TestSubreddit',
+    created_at_reddit: '2024-01-01T00:00:00Z',
+    subreddit: { id: 1, name: 'TestSubreddit' },
+    analyzed: false,
     is_favorite: false
   }
 
   const mockPostListResponse: PostListResponse = {
     count: 1,
-    next: null,
-    previous: null,
-    results: [mockPost]
+    items: [mockPost]
   }
 
   const mockCategory: Category = {
@@ -58,7 +58,7 @@ describe('usePostsStore', () => {
       expect(store.currentPost).toBeNull()
       expect(store.categories).toEqual([])
       expect(store.filters).toEqual({ page: 1, page_size: 20 })
-      expect(store.pagination).toEqual({ count: 0, next: null, previous: null })
+      expect(store.pagination).toEqual({ count: 0 })
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -83,18 +83,36 @@ describe('usePostsStore', () => {
       expect(store.favoriteCount).toBe(2)
     })
 
-    it('hasNextPage es true cuando hay página siguiente', () => {
+    it('hasNextPage es true cuando hay más páginas', () => {
       const store = usePostsStore()
-      store.pagination.next = 'http://api.com/posts/?page=2'
+      store.pagination.count = 50
+      store.filters.page = 1
+      store.filters.page_size = 20
 
       expect(store.hasNextPage).toBe(true)
     })
 
+    it('hasNextPage es false cuando estamos en la última página', () => {
+      const store = usePostsStore()
+      store.pagination.count = 20
+      store.filters.page = 1
+      store.filters.page_size = 20
+
+      expect(store.hasNextPage).toBe(false)
+    })
+
     it('hasPreviousPage es true cuando hay página anterior', () => {
       const store = usePostsStore()
-      store.pagination.previous = 'http://api.com/posts/?page=1'
+      store.filters.page = 2
 
       expect(store.hasPreviousPage).toBe(true)
+    })
+
+    it('hasPreviousPage es false cuando estamos en página 1', () => {
+      const store = usePostsStore()
+      store.filters.page = 1
+
+      expect(store.hasPreviousPage).toBe(false)
     })
 
     it('currentPage retorna la página actual', () => {
@@ -198,7 +216,7 @@ describe('usePostsStore', () => {
       const result = await store.toggleFavorite(1)
 
       expect(result).toBe(true)
-      expect(store.posts[0].is_favorite).toBe(true)
+      expect(store.posts[0]?.is_favorite).toBe(true)
     })
 
     it('desmarca un post como favorito', async () => {
@@ -210,7 +228,7 @@ describe('usePostsStore', () => {
       const result = await store.toggleFavorite(1)
 
       expect(result).toBe(false)
-      expect(store.posts[0].is_favorite).toBe(false)
+      expect(store.posts[0]?.is_favorite).toBe(false)
     })
 
     it('actualiza currentPost si está cargado', async () => {
@@ -290,8 +308,9 @@ describe('usePostsStore', () => {
 
     it('nextPage incrementa la página si hay siguiente', async () => {
       const store = usePostsStore()
-      store.pagination.next = 'http://api.com/posts/?page=2'
+      store.pagination.count = 50
       store.filters.page = 1
+      store.filters.page_size = 20
 
       store.nextPage()
 
@@ -300,8 +319,9 @@ describe('usePostsStore', () => {
 
     it('nextPage no hace nada si no hay página siguiente', async () => {
       const store = usePostsStore()
-      store.pagination.next = null
+      store.pagination.count = 20
       store.filters.page = 1
+      store.filters.page_size = 20
 
       store.nextPage()
 
@@ -311,7 +331,6 @@ describe('usePostsStore', () => {
 
     it('previousPage decrementa la página si hay anterior', async () => {
       const store = usePostsStore()
-      store.pagination.previous = 'http://api.com/posts/?page=1'
       store.filters.page = 2
 
       store.previousPage()
@@ -321,7 +340,6 @@ describe('usePostsStore', () => {
 
     it('previousPage no hace nada si está en página 1', async () => {
       const store = usePostsStore()
-      store.pagination.previous = null
       store.filters.page = 1
 
       store.previousPage()

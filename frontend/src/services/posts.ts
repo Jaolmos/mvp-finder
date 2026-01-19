@@ -46,9 +46,7 @@ export interface PostFilters {
 
 export interface PostListResponse {
   count: number
-  next: string | null
-  previous: string | null
-  results: Post[]
+  items: Post[]
 }
 
 class PostService {

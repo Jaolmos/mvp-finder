@@ -17,9 +17,7 @@ export const usePostsStore = defineStore('posts', () => {
     page_size: 20
   })
   const pagination = ref({
-    count: 0,
-    next: null as string | null,
-    previous: null as string | null
+    count: 0
   })
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -34,8 +32,12 @@ export const usePostsStore = defineStore('posts', () => {
     return posts.value.filter((post) => post.is_favorite).length
   })
 
-  const hasNextPage = computed(() => !!pagination.value.next)
-  const hasPreviousPage = computed(() => !!pagination.value.previous)
+  const hasNextPage = computed(() => {
+    const pageSize = filters.value.page_size || 20
+    const currentPageNum = filters.value.page || 1
+    return currentPageNum * pageSize < pagination.value.count
+  })
+  const hasPreviousPage = computed(() => (filters.value.page || 1) > 1)
   const currentPage = computed(() => filters.value.page || 1)
   const totalPages = computed(() => {
     const pageSize = filters.value.page_size || 20
@@ -54,11 +56,9 @@ export const usePostsStore = defineStore('posts', () => {
       }
 
       const response: PostListResponse = await postService.list(filters.value)
-      posts.value = response.results
+      posts.value = response.items
       pagination.value = {
-        count: response.count,
-        next: response.next,
-        previous: response.previous
+        count: response.count
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar posts'
@@ -90,7 +90,7 @@ export const usePostsStore = defineStore('posts', () => {
 
       // Actualizar el post en la lista
       const postIndex = posts.value.findIndex((p) => p.id === id)
-      if (postIndex !== -1) {
+      if (postIndex !== -1 && posts.value[postIndex]) {
         posts.value[postIndex].is_favorite = result.is_favorite
       }
 
