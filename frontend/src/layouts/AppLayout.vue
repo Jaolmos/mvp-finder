@@ -1,20 +1,49 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const router = useRouter()
 
+// Estado del sidebar para móvil
+const isSidebarOpen = ref(false)
+
 async function handleLogout() {
   await authStore.logout()
   router.push({ name: 'login' })
 }
+
+// Toggle sidebar en móvil
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
+// Cerrar sidebar al navegar (móvil)
+const closeSidebar = () => {
+  isSidebarOpen.value = false
+}
+
+// Cerrar sidebar al hacer click en un link
+router.afterEach(() => {
+  closeSidebar()
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-900">
+    <!-- Backdrop móvil (solo visible cuando sidebar está abierto) -->
+    <div
+      v-if="isSidebarOpen"
+      @click="closeSidebar"
+      class="fixed inset-0 bg-black/50 z-30 md:hidden"
+    ></div>
+
     <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 w-64 bg-slate-800 border-r border-slate-700">
+    <aside
+      class="fixed inset-y-0 left-0 w-64 bg-slate-800 border-r border-slate-700 z-40 transition-transform duration-300"
+      :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+    >
       <!-- Logo -->
       <div class="h-16 flex items-center px-6 border-b border-slate-700">
         <h1 class="text-xl font-bold text-purple-400">Reddit MVP Finder</h1>
@@ -58,14 +87,26 @@ async function handleLogout() {
     </aside>
 
     <!-- Main content -->
-    <div class="pl-64">
+    <div class="md:pl-64">
       <!-- Header -->
-      <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-end px-6">
-        <div class="flex items-center space-x-4">
-          <span class="text-slate-300">{{ authStore.user?.username }}</span>
+      <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 md:px-6">
+        <!-- Botón hamburguesa (solo móvil) -->
+        <button
+          @click="toggleSidebar"
+          class="p-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors md:hidden"
+          aria-label="Toggle menu"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <!-- User info y logout -->
+        <div class="flex items-center space-x-4 ml-auto">
+          <span class="text-slate-300 text-sm md:text-base">{{ authStore.user?.username }}</span>
           <button
             @click="handleLogout"
-            class="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            class="px-3 py-2 md:px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
           >
             Cerrar sesión
           </button>
@@ -73,7 +114,7 @@ async function handleLogout() {
       </header>
 
       <!-- Page content -->
-      <main class="p-6">
+      <main class="p-4 md:p-6">
         <slot />
       </main>
     </div>
