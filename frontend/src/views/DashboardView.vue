@@ -60,14 +60,14 @@ const handlePostClick = (id: number) => {
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Total Posts -->
         <div
-          class="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-primary-500 transition-colors cursor-pointer"
+          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
           @click="goToPosts"
         >
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-400 text-sm font-medium">Total Posts</div>
+            <div class="text-dark-300 text-sm font-medium">Total Posts</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-dark-600"
+              class="h-8 w-8 text-primary-500/50"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -85,13 +85,13 @@ const handlePostClick = (id: number) => {
 
         <!-- Posts Analizados -->
         <div
-          class="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-secondary-500 transition-colors"
+          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all shadow-lg"
         >
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-400 text-sm font-medium">Posts Analizados</div>
+            <div class="text-dark-300 text-sm font-medium">Posts Analizados</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-dark-600"
+              class="h-8 w-8 text-secondary-500/50"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -104,16 +104,16 @@ const handlePostClick = (id: number) => {
               />
             </svg>
           </div>
-          <div class="text-3xl font-bold text-secondary-400">{{ stats.analyzed }}</div>
+          <div class="text-3xl font-bold text-white">{{ stats.analyzed }}</div>
         </div>
 
         <!-- Favoritos -->
-        <div class="bg-dark-800 rounded-lg p-6 border border-dark-700">
+        <div class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-accent hover:bg-dark-600 transition-all shadow-lg">
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-400 text-sm font-medium">Favoritos</div>
+            <div class="text-dark-300 text-sm font-medium">Favoritos</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-dark-600"
+              class="h-8 w-8 text-accent/50"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -135,18 +135,18 @@ const handlePostClick = (id: number) => {
         <!-- Ir a Posts -->
         <button
           @click="goToPosts"
-          class="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-primary-500 transition-all text-left group"
+          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-primary-400 transition-colors">
                 Ver todos los posts
               </h3>
-              <p class="text-dark-400 text-sm">Explorar, filtrar y analizar posts de Reddit</p>
+              <p class="text-dark-300 text-sm">Explorar, filtrar y analizar posts de Reddit</p>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-dark-600 group-hover:text-primary-500 transition-colors"
+              class="h-8 w-8 text-primary-500/50 group-hover:text-primary-500 transition-colors"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -164,20 +164,20 @@ const handlePostClick = (id: number) => {
         <!-- Ir a Subreddits -->
         <button
           @click="goToSubreddits"
-          class="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-secondary-500 transition-all text-left group"
+          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-secondary-400 transition-colors">
                 Gestionar subreddits
               </h3>
-              <p class="text-dark-400 text-sm">
+              <p class="text-dark-300 text-sm">
                 Añadir, activar o desactivar fuentes de contenido
               </p>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-dark-600 group-hover:text-secondary-500 transition-colors"
+              class="h-8 w-8 text-secondary-500/50 group-hover:text-secondary-500 transition-colors"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

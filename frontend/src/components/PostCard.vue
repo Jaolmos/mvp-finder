@@ -42,16 +42,16 @@ const handleClick = () => {
 
 <template>
   <div
-    class="bg-dark-800 border border-dark-700 rounded-lg p-5 hover:border-primary-500 transition-colors cursor-pointer"
+    class="bg-dark-700 border border-dark-600 rounded-lg p-5 hover:border-primary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
     @click="handleClick"
   >
     <!-- Header -->
     <div class="flex items-start justify-between mb-3">
       <div class="flex-1">
-        <h3 class="text-lg font-semibold text-white mb-1 hover:text-primary-400 transition-colors">
+        <h3 class="text-lg font-semibold text-white mb-2 hover:text-primary-400 transition-colors">
           {{ post.title }}
         </h3>
-        <div class="flex items-center gap-3 text-sm text-dark-400">
+        <div class="flex items-center gap-3 text-sm text-dark-300">
           <span class="flex items-center gap-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -118,7 +118,7 @@ const handleClick = () => {
     </div>
 
     <!-- Contenido -->
-    <p class="text-dark-300 text-sm mb-4 line-clamp-3">
+    <p class="text-dark-200 text-sm mb-4 line-clamp-3">
       {{ truncatedContent }}
     </p>
 
@@ -126,7 +126,7 @@ const handleClick = () => {
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4 text-sm">
         <!-- Score -->
-        <span class="flex items-center gap-1 text-secondary-400">
+        <span class="flex items-center gap-1 text-secondary-300 font-medium">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-4 w-4"
@@ -145,13 +145,13 @@ const handleClick = () => {
         </span>
 
         <!-- Fecha -->
-        <span class="text-dark-500">{{ formattedDate }}</span>
+        <span class="text-dark-400">{{ formattedDate }}</span>
       </div>
 
       <!-- Badge de análisis -->
       <div v-if="post.summary" class="flex items-center gap-2">
         <span
-          class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary-500/10 text-primary-400 text-xs font-medium"
+          class="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-500/20 text-primary-300 text-xs font-medium"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

@@ -113,21 +113,21 @@ const pageNumbers = computed(() => {
       </div>
 
       <!-- Filtros -->
-      <div class="bg-dark-800 rounded-lg p-4 border border-dark-700 mb-6">
+      <div class="bg-dark-700 rounded-lg p-4 border border-dark-600 mb-6 shadow-lg">
         <div class="flex flex-wrap gap-4">
           <!-- Búsqueda -->
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Buscar en título o contenido..."
-            class="flex-1 min-w-[250px] px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            class="flex-1 min-w-[250px] px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             @keyup.enter="applyFilters"
           />
 
           <!-- Subreddit -->
           <select
             v-model="selectedSubreddit"
-            class="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            class="px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">Todos los subreddits</option>
             <option v-for="subreddit in availableSubreddits" :key="subreddit" :value="subreddit">
@@ -136,16 +136,16 @@ const pageNumbers = computed(() => {
           </select>
 
           <!-- Checkboxes -->
-          <label class="flex items-center gap-2 px-3 py-2 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
+          <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
             <input
               v-model="showOnlyFavorites"
               type="checkbox"
-              class="w-4 h-4 text-primary-500 bg-dark-800 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
+              class="w-4 h-4 text-primary-500 bg-dark-900 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
             />
             <span class="text-sm text-white">Solo favoritos</span>
           </label>
 
-          <label class="flex items-center gap-2 px-3 py-2 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
+          <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
             <input
               v-model="showOnlyAnalyzed"
               type="checkbox"
