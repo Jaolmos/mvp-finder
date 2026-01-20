@@ -26,8 +26,8 @@ async function handleSubmit() {
 
 <template>
   <AuthLayout>
-    <form @submit.prevent="handleSubmit" class="bg-slate-800 rounded-lg p-8 shadow-xl border border-slate-700">
-      <h2 class="text-2xl font-semibold text-white mb-6 text-center">Iniciar sesión</h2>
+    <form @submit.prevent="handleSubmit" class="bg-slate-800 rounded-lg p-6 sm:p-8 shadow-xl border border-slate-700">
+      <h2 class="text-xl sm:text-2xl font-semibold text-white mb-6 text-center">Iniciar sesión</h2>
 
       <!-- Error message -->
       <div
