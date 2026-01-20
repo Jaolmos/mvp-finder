@@ -112,13 +112,13 @@ const formatDate = (dateString: string) => {
   <AppLayout>
     <div>
       <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-white">Subreddits</h1>
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-white">Subreddits</h1>
         <button
           @click="openCreateModal"
-          class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+          class="w-full sm:w-auto px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
         >
-          Añadir Subreddit
+          + Añadir Subreddit
         </button>
       </div>
 
@@ -162,7 +162,9 @@ const formatDate = (dateString: string) => {
 
       <!-- Tabla de subreddits -->
       <div v-else class="bg-dark-700 rounded-lg border border-dark-600 shadow-lg overflow-hidden">
-        <table class="w-full">
+        <!-- Wrapper con scroll horizontal en móvil -->
+        <div class="overflow-x-auto">
+        <table class="w-full min-w-[640px]">
           <thead class="bg-dark-800">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
@@ -284,6 +286,7 @@ const formatDate = (dateString: string) => {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <!-- Modal Crear/Editar -->
@@ -292,12 +295,12 @@ const formatDate = (dateString: string) => {
         class="fixed inset-0 z-50 overflow-y-auto"
         @click.self="closeModal"
       >
-        <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
           <!-- Overlay -->
           <div class="fixed inset-0 bg-black/70 transition-opacity"></div>
 
           <!-- Modal -->
-          <div class="relative bg-dark-700 rounded-lg shadow-xl max-w-md w-full p-6 border border-dark-600">
+          <div class="relative bg-dark-700 rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 border border-dark-600">
             <!-- Header -->
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xl font-semibold text-white">
@@ -371,17 +374,17 @@ const formatDate = (dateString: string) => {
               </div>
 
               <!-- Botones -->
-              <div class="flex justify-end gap-3">
+              <div class="flex flex-col sm:flex-row sm:justify-end gap-3">
                 <button
                   type="button"
                   @click="closeModal"
-                  class="px-4 py-2 bg-dark-600 hover:bg-dark-500 text-white rounded-lg transition-colors"
+                  class="w-full sm:w-auto px-4 py-2 bg-dark-600 hover:bg-dark-500 text-white rounded-lg transition-colors order-2 sm:order-1"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+                  class="w-full sm:w-auto px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors order-1 sm:order-2"
                 >
                   {{ modalMode === 'create' ? 'Crear' : 'Guardar' }}
                 </button>
