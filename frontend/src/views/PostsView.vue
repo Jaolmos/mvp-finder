@@ -63,7 +63,7 @@ const handlePageChange = async (page: number) => {
   postsStore.goToPage(page)
 }
 
-// Generador de números de página para mostrar
+// Generador de números de página para mostrar (desktop)
 const pageNumbers = computed(() => {
   const total = postsStore.totalPages
   const current = postsStore.currentPage
@@ -99,14 +99,47 @@ const pageNumbers = computed(() => {
 
   return pages
 })
+
+// Generador de números de página para móvil (simplificado)
+const pageNumbersMobile = computed(() => {
+  const total = postsStore.totalPages
+  const current = postsStore.currentPage
+  const pages: (number | string)[] = []
+
+  if (total <= 3) {
+    // Mostrar todas si son 3 o menos
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Mostrar: primera, actual, última (con ... si es necesario)
+    pages.push(1)
+
+    if (current > 2) {
+      pages.push('...')
+    }
+
+    if (current !== 1 && current !== total) {
+      pages.push(current)
+    }
+
+    if (current < total - 1) {
+      pages.push('...')
+    }
+
+    pages.push(total)
+  }
+
+  return pages
+})
 </script>
 
 <template>
   <AppLayout>
     <div>
       <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white">Posts de Reddit</h1>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-white">Posts de Reddit</h1>
         <div class="text-sm text-dark-400">
           {{ postsStore.pagination.count }} posts encontrados
         </div>
@@ -114,20 +147,20 @@ const pageNumbers = computed(() => {
 
       <!-- Filtros -->
       <div class="bg-dark-700 rounded-lg p-4 border border-dark-600 mb-6 shadow-lg">
-        <div class="flex flex-wrap gap-4">
-          <!-- Búsqueda -->
+        <div class="flex flex-col md:flex-row md:flex-wrap gap-3">
+          <!-- Búsqueda (full width en móvil) -->
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Buscar en título o contenido..."
-            class="flex-1 min-w-[250px] px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            class="w-full md:flex-1 md:min-w-[250px] px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             @keyup.enter="applyFilters"
           />
 
-          <!-- Subreddit -->
+          <!-- Subreddit (full width en móvil) -->
           <select
             v-model="selectedSubreddit"
-            class="px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            class="w-full md:w-auto px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">Todos los subreddits</option>
             <option v-for="subreddit in availableSubreddits" :key="subreddit" :value="subreddit">
@@ -135,39 +168,43 @@ const pageNumbers = computed(() => {
             </option>
           </select>
 
-          <!-- Checkboxes -->
-          <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
-            <input
-              v-model="showOnlyFavorites"
-              type="checkbox"
-              class="w-4 h-4 text-primary-500 bg-dark-900 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
-            />
-            <span class="text-sm text-white">Solo favoritos</span>
-          </label>
+          <!-- Checkboxes (en fila en móvil) -->
+          <div class="flex gap-3 flex-wrap">
+            <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
+              <input
+                v-model="showOnlyFavorites"
+                type="checkbox"
+                class="w-4 h-4 text-primary-500 bg-dark-900 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
+              />
+              <span class="text-sm text-white">Solo favoritos</span>
+            </label>
 
-          <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
-            <input
-              v-model="showOnlyAnalyzed"
-              type="checkbox"
-              class="w-4 h-4 text-primary-500 bg-dark-800 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
-            />
-            <span class="text-sm text-white">Solo analizados</span>
-          </label>
+            <label class="flex items-center gap-2 px-3 py-2 bg-dark-800 rounded-lg cursor-pointer hover:bg-dark-600 transition-colors">
+              <input
+                v-model="showOnlyAnalyzed"
+                type="checkbox"
+                class="w-4 h-4 text-primary-500 bg-dark-800 border-dark-600 rounded focus:ring-primary-500 focus:ring-2"
+              />
+              <span class="text-sm text-white">Solo analizados</span>
+            </label>
+          </div>
 
-          <!-- Botones -->
-          <button
-            @click="applyFilters"
-            class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
-          >
-            Aplicar
-          </button>
+          <!-- Botones (full width en móvil) -->
+          <div class="flex gap-3 w-full md:w-auto">
+            <button
+              @click="applyFilters"
+              class="flex-1 md:flex-none px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+            >
+              Aplicar
+            </button>
 
-          <button
-            @click="clearFilters"
-            class="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg font-medium transition-colors"
-          >
-            Limpiar
-          </button>
+            <button
+              @click="clearFilters"
+              class="flex-1 md:flex-none px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg font-medium transition-colors"
+            >
+              Limpiar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -221,57 +258,116 @@ const pageNumbers = computed(() => {
       <!-- Paginación -->
       <div
         v-if="postsStore.totalPages > 1 && !postsStore.loading"
-        class="flex items-center justify-between bg-dark-800 rounded-lg p-4 border border-dark-700"
+        class="bg-dark-800 rounded-lg p-4 border border-dark-700"
       >
-        <div class="text-sm text-dark-400">
-          Página {{ postsStore.currentPage }} de {{ postsStore.totalPages }}
-        </div>
+        <!-- Desktop: layout horizontal -->
+        <div class="hidden md:flex items-center justify-between">
+          <div class="text-sm text-dark-400">
+            Página {{ postsStore.currentPage }} de {{ postsStore.totalPages }}
+          </div>
 
-        <div class="flex items-center gap-2">
-          <!-- Botón anterior -->
-          <button
-            @click="postsStore.previousPage()"
-            :disabled="!postsStore.hasPreviousPage"
-            class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            :class="
-              postsStore.hasPreviousPage
-                ? 'bg-dark-700 hover:bg-dark-600 text-white'
-                : 'bg-dark-800 text-dark-600'
-            "
-          >
-            Anterior
-          </button>
-
-          <!-- Números de página -->
-          <template v-for="(page, index) in pageNumbers" :key="index">
+          <div class="flex items-center gap-2">
+            <!-- Botón anterior -->
             <button
-              v-if="typeof page === 'number'"
-              @click="handlePageChange(page)"
-              class="px-3 py-2 rounded-lg font-medium transition-colors"
+              @click="postsStore.previousPage()"
+              :disabled="!postsStore.hasPreviousPage"
+              class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="
-                page === postsStore.currentPage
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-dark-700 hover:bg-dark-600 text-white'
+                postsStore.hasPreviousPage
+                  ? 'bg-dark-700 hover:bg-dark-600 text-white'
+                  : 'bg-dark-800 text-dark-600'
               "
             >
-              {{ page }}
+              Anterior
             </button>
-            <span v-else class="px-2 text-dark-500">...</span>
-          </template>
 
-          <!-- Botón siguiente -->
-          <button
-            @click="postsStore.nextPage()"
-            :disabled="!postsStore.hasNextPage"
-            class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            :class="
-              postsStore.hasNextPage
-                ? 'bg-dark-700 hover:bg-dark-600 text-white'
-                : 'bg-dark-800 text-dark-600'
-            "
-          >
-            Siguiente
-          </button>
+            <!-- Números de página -->
+            <template v-for="(page, index) in pageNumbers" :key="index">
+              <button
+                v-if="typeof page === 'number'"
+                @click="handlePageChange(page)"
+                class="px-3 py-2 rounded-lg font-medium transition-colors"
+                :class="
+                  page === postsStore.currentPage
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-700 hover:bg-dark-600 text-white'
+                "
+              >
+                {{ page }}
+              </button>
+              <span v-else class="px-2 text-dark-500">...</span>
+            </template>
+
+            <!-- Botón siguiente -->
+            <button
+              @click="postsStore.nextPage()"
+              :disabled="!postsStore.hasNextPage"
+              class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="
+                postsStore.hasNextPage
+                  ? 'bg-dark-700 hover:bg-dark-600 text-white'
+                  : 'bg-dark-800 text-dark-600'
+              "
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+
+        <!-- Móvil: layout vertical simplificado -->
+        <div class="md:hidden space-y-3">
+          <!-- Indicador de página -->
+          <div class="text-sm text-dark-400 text-center">
+            Página {{ postsStore.currentPage }} de {{ postsStore.totalPages }}
+          </div>
+
+          <!-- Botones Anterior/Siguiente -->
+          <div class="flex gap-2">
+            <button
+              @click="postsStore.previousPage()"
+              :disabled="!postsStore.hasPreviousPage"
+              class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="
+                postsStore.hasPreviousPage
+                  ? 'bg-dark-700 hover:bg-dark-600 text-white'
+                  : 'bg-dark-800 text-dark-600'
+              "
+            >
+              ← Anterior
+            </button>
+
+            <button
+              @click="postsStore.nextPage()"
+              :disabled="!postsStore.hasNextPage"
+              class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="
+                postsStore.hasNextPage
+                  ? 'bg-dark-700 hover:bg-dark-600 text-white'
+                  : 'bg-dark-800 text-dark-600'
+              "
+            >
+              Siguiente →
+            </button>
+          </div>
+
+          <!-- Números de página (simplificados) -->
+          <div class="flex items-center justify-center gap-2">
+            <template v-for="(page, index) in pageNumbersMobile" :key="index">
+              <button
+                v-if="typeof page === 'number'"
+                @click="handlePageChange(page)"
+                class="px-3 py-2 rounded-lg font-medium transition-colors min-w-[2.5rem]"
+                :class="
+                  page === postsStore.currentPage
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-700 hover:bg-dark-600 text-white'
+                "
+              >
+                {{ page }}
+              </button>
+              <span v-else class="px-1 text-dark-500 text-sm">...</span>
+            </template>
+          </div>
         </div>
       </div>
     </div>
