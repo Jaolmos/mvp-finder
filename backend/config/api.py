@@ -18,9 +18,11 @@ api = NinjaAPI(
 # Registrar routers de las apps
 from apps.posts.api import router as posts_router
 from apps.subreddits.api import router as subreddits_router
+from apps.scraper.api import router as scraper_router
 
 api.add_router("/posts", posts_router)
 api.add_router("/subreddits", subreddits_router)
+api.add_router("/scraper", scraper_router)
 
 
 # Schemas para autenticación
