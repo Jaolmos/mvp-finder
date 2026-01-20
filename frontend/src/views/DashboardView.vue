@@ -52,15 +52,15 @@ const handlePostClick = (id: number) => {
 <template>
   <AppLayout>
     <div>
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+      <div class="mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-white">Dashboard</h1>
       </div>
 
       <!-- Stats cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Total Posts -->
         <div
-          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
           @click="goToPosts"
         >
           <div class="flex items-center justify-between mb-2">
@@ -85,7 +85,7 @@ const handlePostClick = (id: number) => {
 
         <!-- Posts Analizados -->
         <div
-          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all shadow-lg"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all shadow-lg"
         >
           <div class="flex items-center justify-between mb-2">
             <div class="text-dark-300 text-sm font-medium">Posts Analizados</div>
@@ -108,7 +108,7 @@ const handlePostClick = (id: number) => {
         </div>
 
         <!-- Favoritos -->
-        <div class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-accent hover:bg-dark-600 transition-all shadow-lg">
+        <div class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-accent hover:bg-dark-600 transition-all shadow-lg">
           <div class="flex items-center justify-between mb-2">
             <div class="text-dark-300 text-sm font-medium">Favoritos</div>
             <svg
@@ -135,7 +135,7 @@ const handlePostClick = (id: number) => {
         <!-- Ir a Posts -->
         <button
           @click="goToPosts"
-          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
@@ -164,7 +164,7 @@ const handlePostClick = (id: number) => {
         <!-- Ir a Subreddits -->
         <button
           @click="goToSubreddits"
-          class="bg-dark-700 rounded-lg p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
@@ -194,9 +194,9 @@ const handlePostClick = (id: number) => {
       </div>
 
       <!-- Posts Recientes -->
-      <div class="bg-dark-800 rounded-lg p-6 border border-dark-700">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-white">Posts Recientes</h2>
+      <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 class="text-lg sm:text-xl font-semibold text-white">Posts Recientes</h2>
           <button
             @click="goToPosts"
             class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors"

@@ -90,12 +90,12 @@ const openInReddit = () => {
       </div>
 
       <!-- Post detail -->
-      <div v-else-if="postsStore.currentPost" class="space-y-6">
+      <div v-else-if="postsStore.currentPost" class="space-y-4 md:space-y-6">
         <!-- Header card -->
-        <div class="bg-dark-800 rounded-lg p-6 border border-dark-700">
-          <div class="flex items-start justify-between mb-4">
+        <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div class="flex-1">
-              <h1 class="text-3xl font-bold text-white mb-4">
+              <h1 class="text-2xl sm:text-3xl font-bold text-white mb-4">
                 {{ postsStore.currentPost.title }}
               </h1>
 
@@ -177,7 +177,7 @@ const openInReddit = () => {
             <!-- Botón favorito -->
             <button
               @click="handleToggleFavorite"
-              class="ml-4 p-3 rounded-lg transition-colors"
+              class="sm:ml-4 p-3 rounded-lg transition-colors self-start sm:self-auto"
               :class="
                 postsStore.currentPost.is_favorite
                   ? 'bg-accent/10 text-accent hover:bg-accent/20'
@@ -207,7 +207,7 @@ const openInReddit = () => {
           <!-- Botón abrir en Reddit -->
           <button
             @click="openInReddit"
-            class="flex items-center gap-2 px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium transition-colors"
+            class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -228,8 +228,8 @@ const openInReddit = () => {
         </div>
 
         <!-- Content card -->
-        <div class="bg-dark-800 rounded-lg p-6 border border-dark-700">
-          <h2 class="text-xl font-semibold text-white mb-4">Contenido</h2>
+        <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
+          <h2 class="text-lg sm:text-xl font-semibold text-white mb-4">Contenido</h2>
           <div class="prose prose-invert max-w-none">
             <p class="text-dark-200 whitespace-pre-wrap leading-relaxed">
               {{ postsStore.currentPost.content }}
@@ -240,12 +240,12 @@ const openInReddit = () => {
         <!-- AI Analysis card (si existe) -->
         <div
           v-if="postsStore.currentPost.summary"
-          class="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-lg p-6 border border-primary-500/30"
+          class="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-lg p-4 sm:p-6 border border-primary-500/30"
         >
           <div class="flex items-center gap-2 mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-primary-400"
+              class="h-5 w-5 sm:h-6 sm:w-6 text-primary-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -257,7 +257,7 @@ const openInReddit = () => {
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
               />
             </svg>
-            <h2 class="text-xl font-semibold text-white">Análisis IA</h2>
+            <h2 class="text-lg sm:text-xl font-semibold text-white">Análisis IA</h2>
           </div>
 
           <div class="space-y-4">
