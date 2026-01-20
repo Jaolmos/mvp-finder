@@ -53,6 +53,14 @@ def tokens(user):
 
 
 @pytest.fixture
+def access_token(tokens):
+    """
+    Fixture que retorna solo el access token.
+    """
+    return tokens['access']
+
+
+@pytest.fixture
 def subreddit(db):
     """
     Fixture que crea un subreddit de prueba.
