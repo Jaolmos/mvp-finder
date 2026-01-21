@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("subreddits", "0001_initial"),
+        ("topics", "0001_initial"),
     ]
 
     operations = [
@@ -26,42 +26,71 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "reddit_id",
+                    "external_id",
                     models.CharField(
-                        help_text="ID único del post en Reddit",
+                        help_text="ID único del producto en Product Hunt",
                         max_length=50,
                         unique=True,
                     ),
                 ),
                 (
                     "title",
-                    models.CharField(help_text="Título del post", max_length=300),
+                    models.CharField(help_text="Nombre del producto", max_length=300),
+                ),
+                (
+                    "tagline",
+                    models.CharField(
+                        blank=True,
+                        help_text="Tagline del producto",
+                        max_length=300,
+                    ),
                 ),
                 (
                     "content",
                     models.TextField(
-                        blank=True, help_text="Contenido completo del post"
+                        blank=True, help_text="Descripción completa del producto"
                     ),
                 ),
                 (
                     "author",
                     models.CharField(
-                        help_text="Autor del post en Reddit", max_length=100
+                        help_text="Maker principal del producto", max_length=100
                     ),
                 ),
                 (
                     "score",
                     models.IntegerField(
-                        default=0, help_text="Puntuación (upvotes) en Reddit"
+                        default=0, help_text="Puntuación (votos) en Product Hunt"
+                    ),
+                ),
+                (
+                    "votes_count",
+                    models.IntegerField(
+                        default=0, help_text="Número de votos"
+                    ),
+                ),
+                (
+                    "comments_count",
+                    models.IntegerField(
+                        default=0, help_text="Número de comentarios"
                     ),
                 ),
                 (
                     "url",
-                    models.URLField(help_text="URL del post en Reddit", max_length=500),
+                    models.URLField(help_text="URL del producto en Product Hunt", max_length=500),
                 ),
                 (
-                    "created_at_reddit",
-                    models.DateTimeField(help_text="Fecha de creación en Reddit"),
+                    "website",
+                    models.URLField(
+                        blank=True,
+                        help_text="URL del sitio web del producto",
+                        max_length=500,
+                        null=True,
+                    ),
+                ),
+                (
+                    "created_at_source",
+                    models.DateTimeField(help_text="Fecha de creación en Product Hunt"),
                 ),
                 (
                     "summary",
@@ -126,28 +155,28 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "subreddit",
+                    "topic",
                     models.ForeignKey(
-                        help_text="Subreddit de origen",
+                        help_text="Topic de origen",
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="posts",
-                        to="subreddits.subreddit",
+                        to="topics.topic",
                     ),
                 ),
             ],
             options={
                 "verbose_name": "Post",
                 "verbose_name_plural": "Posts",
-                "ordering": ["-created_at_reddit"],
+                "ordering": ["-created_at_source"],
                 "indexes": [
                     models.Index(
-                        fields=["reddit_id"], name="posts_post_reddit__b2866a_idx"
+                        fields=["external_id"], name="posts_post_externa_a1b2c3_idx"
                     ),
                     models.Index(
                         fields=["analyzed"], name="posts_post_analyze_38ea66_idx"
                     ),
                     models.Index(
-                        fields=["-created_at_reddit"],
+                        fields=["-created_at_source"],
                         name="posts_post_created_690296_idx",
                     ),
                 ],

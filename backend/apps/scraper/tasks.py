@@ -1,67 +1,61 @@
 """
-Tareas Celery para scraping de Reddit.
+Tareas Celery para scraping de Product Hunt.
 Ejecutan operaciones en background sin bloquear la API.
 """
 from celery import shared_task
 from typing import List, Optional
 import logging
 
-from .scraper import RedditScraper
+from .scraper import ProductHuntScraper
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='scraper.sync_reddit_posts')
-def sync_reddit_posts(
-    subreddit_ids: Optional[List[int]] = None,
+@shared_task(name='scraper.sync_posts')
+def sync_posts(
+    topic_ids: Optional[List[int]] = None,
     limit: int = 50,
-    time_filter: str = "week"
 ) -> dict:
     """
-    Tarea Celery para sincronizar posts de Reddit.
+    Tarea Celery para sincronizar productos de Product Hunt.
 
     Args:
-        subreddit_ids: Lista de IDs de subreddits a sincronizar.
-                       Si es None, sincroniza todos los activos.
-        limit: Número máximo de posts por subreddit (default: 50)
-        time_filter: Filtro temporal: hour, day, week, month, year, all (default: week)
+        topic_ids: Lista de IDs de topics a sincronizar.
+                   Si es None, sincroniza todos los activos.
+        limit: Número máximo de productos por topic (default: 50)
 
     Returns:
         Dict con resumen de la sincronización
     """
-    logger.info(f"Iniciando sincronización de posts. Subreddits: {subreddit_ids or 'todos'}")
+    logger.info(f"Iniciando sincronización de posts. Topics: {topic_ids or 'todos'}")
 
     try:
-        scraper = RedditScraper()
+        scraper = ProductHuntScraper()
 
-        # Si se especifican subreddits concretos
-        if subreddit_ids:
-            from apps.subreddits.models import Subreddit
+        # Si se especifican topics concretos
+        if topic_ids:
+            from apps.topics.models import Topic
             results = []
 
-            for subreddit_id in subreddit_ids:
+            for topic_id in topic_ids:
                 try:
-                    subreddit = Subreddit.objects.get(id=subreddit_id, active=True)
-                    result = scraper.scrape_subreddit(
-                        subreddit_name=subreddit.name,
+                    topic = Topic.objects.get(id=topic_id, is_active=True)
+                    result = scraper.scrape_topic(
+                        topic_name=topic.name,
                         limit=limit,
-                        time_filter=time_filter
                     )
                     results.append(result)
-                except Subreddit.DoesNotExist:
-                    logger.warning(f"Subreddit con ID {subreddit_id} no existe o no está activo")
+                except Topic.DoesNotExist:
+                    logger.warning(f"Topic con ID {topic_id} no existe o no está activo")
                     results.append({
-                        'subreddit': f'ID:{subreddit_id}',
+                        'topic': f'ID:{topic_id}',
                         'new_posts': 0,
                         'skipped_posts': 0,
-                        'errors': ['Subreddit no encontrado o inactivo']
+                        'errors': ['Topic no encontrado o inactivo']
                     })
         else:
-            # Sincronizar todos los subreddits activos
-            results = scraper.scrape_all_active_subreddits(
-                limit=limit,
-                time_filter=time_filter
-            )
+            # Sincronizar todos los topics activos
+            results = scraper.scrape_all_active_topics(limit=limit)
 
         # Generar resumen
         summary = scraper.get_scraping_summary(results)
@@ -86,25 +80,25 @@ def sync_reddit_posts(
         }
 
 
-@shared_task(name='scraper.test_reddit_connection')
-def test_reddit_connection() -> dict:
+@shared_task(name='scraper.test_connection')
+def test_connection() -> dict:
     """
-    Tarea de prueba para verificar conexión con Reddit.
+    Tarea de prueba para verificar conexión con Product Hunt.
 
     Returns:
         Dict indicando si la conexión fue exitosa
     """
     try:
-        from .reddit_client import RedditClient
+        from .producthunt_client import ProductHuntClient
 
-        success = RedditClient.test_connection()
+        success = ProductHuntClient.test_connection()
 
         if success:
-            logger.info("Conexión con Reddit exitosa")
-            return {'status': 'success', 'message': 'Conexión con Reddit exitosa'}
+            logger.info("Conexión con Product Hunt exitosa")
+            return {'status': 'success', 'message': 'Conexión con Product Hunt exitosa'}
         else:
-            logger.error("Fallo al conectar con Reddit")
-            return {'status': 'error', 'message': 'Fallo al conectar con Reddit'}
+            logger.error("Fallo al conectar con Product Hunt")
+            return {'status': 'error', 'message': 'Fallo al conectar con Product Hunt'}
 
     except Exception as e:
         logger.error(f"Error al probar conexión: {str(e)}", exc_info=True)

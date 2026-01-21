@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="Subreddit",
+            name="Topic",
             fields=[
                 (
                     "id",
@@ -25,13 +25,13 @@ class Migration(migrations.Migration):
                 (
                     "name",
                     models.CharField(
-                        help_text="Nombre del subreddit (ej: SomebodyMakeThis)",
+                        help_text="Nombre del topic (ej: artificial-intelligence)",
                         max_length=100,
                         unique=True,
                     ),
                 ),
                 (
-                    "active",
+                    "is_active",
                     models.BooleanField(
                         default=True, help_text="Si está activo para scraping"
                     ),
@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                     "last_sync",
                     models.DateTimeField(
                         blank=True,
-                        help_text="Última vez que se sincronizó con Reddit",
+                        help_text="Última vez que se sincronizó con Product Hunt",
                         null=True,
                     ),
                 ),
@@ -58,9 +58,10 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "verbose_name": "Subreddit",
-                "verbose_name_plural": "Subreddits",
+                "verbose_name": "Topic",
+                "verbose_name_plural": "Topics",
                 "ordering": ["name"],
+                "db_table": "subreddits_subreddit",
             },
         ),
     ]

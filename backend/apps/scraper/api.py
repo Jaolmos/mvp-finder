@@ -1,12 +1,12 @@
 """
-API endpoints para scraper de Reddit.
+API endpoints para scraper de Product Hunt.
 """
 from typing import List, Optional
 from ninja import Router, Schema
 from django.http import HttpRequest
 
 from config.auth import JWTAuth
-from .tasks import sync_reddit_posts, test_reddit_connection
+from .tasks import sync_posts, test_connection
 
 router = Router(tags=["Scraper"], auth=JWTAuth())
 
@@ -17,9 +17,8 @@ router = Router(tags=["Scraper"], auth=JWTAuth())
 
 class SyncRequestSchema(Schema):
     """Schema para request de sincronización."""
-    subreddit_ids: Optional[List[int]] = None
+    topic_ids: Optional[List[int]] = None
     limit: int = 50
-    time_filter: str = "week"
 
 
 class TaskResponseSchema(Schema):
@@ -42,16 +41,15 @@ class TestConnectionResponseSchema(Schema):
 @router.post(
     "/sync/",
     response={200: TaskResponseSchema},
-    summary="Sincronizar posts de Reddit"
+    summary="Sincronizar productos de Product Hunt"
 )
-def sync_posts(request: HttpRequest, payload: SyncRequestSchema = None):
+def sync_products(request: HttpRequest, payload: SyncRequestSchema = None):
     """
-    Inicia sincronización de posts de Reddit en background.
+    Inicia sincronización de productos de Product Hunt en background.
 
-    - Si `subreddit_ids` está vacío o None: sincroniza todos los subreddits activos
-    - Si `subreddit_ids` tiene valores: sincroniza solo esos subreddits
-    - `limit`: número máximo de posts por subreddit (default: 50)
-    - `time_filter`: hour, day, week, month, year, all (default: week)
+    - Si `topic_ids` está vacío o None: sincroniza todos los topics activos
+    - Si `topic_ids` tiene valores: sincroniza solo esos topics
+    - `limit`: número máximo de productos por topic (default: 50)
 
     La tarea se ejecuta en background con Celery.
     """
@@ -60,10 +58,9 @@ def sync_posts(request: HttpRequest, payload: SyncRequestSchema = None):
         payload = SyncRequestSchema()
 
     # Lanzar tarea Celery
-    task = sync_reddit_posts.delay(
-        subreddit_ids=payload.subreddit_ids,
+    task = sync_posts.delay(
+        topic_ids=payload.topic_ids,
         limit=payload.limit,
-        time_filter=payload.time_filter
     )
 
     return {
@@ -76,17 +73,17 @@ def sync_posts(request: HttpRequest, payload: SyncRequestSchema = None):
 @router.post(
     "/test-connection/",
     response={200: TestConnectionResponseSchema},
-    summary="Probar conexión con Reddit"
+    summary="Probar conexión con Product Hunt"
 )
-def test_connection(request: HttpRequest):
+def test_producthunt_connection(request: HttpRequest):
     """
-    Prueba la conexión con la API de Reddit.
+    Prueba la conexión con la API de Product Hunt.
 
-    Útil para verificar que las credenciales están configuradas correctamente.
+    Útil para verificar que la API key está configurada correctamente.
     """
-    task = test_reddit_connection.delay()
+    task = test_connection.delay()
 
     return {
         "task_id": task.id,
-        "message": "Probando conexión con Reddit..."
+        "message": "Probando conexión con Product Hunt..."
     }

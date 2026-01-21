@@ -1,7 +1,7 @@
 [project]
-name = "reddit-mvp-finder"
+name = "mvp-finder"
 version = "0.1.0"
-description = "Add your description here"
+description = "Aplicación web para agregar y organizar productos de Product Hunt"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -11,8 +11,9 @@ dependencies = [
     "django-ninja>=1.5.3",
     "djangorestframework-simplejwt>=5.5.1",
     "gunicorn>=23.0.0",
-    "praw>=7.8.1",
+    "httpx>=0.28.0",
     "psycopg[binary]>=3.3.2",
+    "python-dateutil>=2.9.0",
     "redis>=7.1.0",
 ]
 
