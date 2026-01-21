@@ -15,8 +15,8 @@ router = Router(tags=["Posts"])
 
 
 # Schemas
-class SubredditSchema(Schema):
-    """Schema para subreddit en la respuesta de posts."""
+class TopicSchema(Schema):
+    """Schema para topic en la respuesta de posts."""
     id: int
     name: str
 
@@ -24,13 +24,17 @@ class SubredditSchema(Schema):
 class PostListSchema(Schema):
     """Schema para listar posts (sin contenido completo)."""
     id: int
-    reddit_id: str
-    subreddit: SubredditSchema
+    external_id: str
+    topic: TopicSchema
     title: str
+    tagline: str
     author: str
     score: int
+    votes_count: int
+    comments_count: int
     url: str
-    created_at_reddit: datetime
+    website: Optional[str] = None
+    created_at_source: datetime
     analyzed: bool
     potential_score: Optional[int] = None
     tags: str
@@ -41,14 +45,18 @@ class PostListSchema(Schema):
 class PostDetailSchema(Schema):
     """Schema para detalle de post (con contenido completo)."""
     id: int
-    reddit_id: str
-    subreddit: SubredditSchema
+    external_id: str
+    topic: TopicSchema
     title: str
+    tagline: str
     content: str
     author: str
     score: int
+    votes_count: int
+    comments_count: int
     url: str
-    created_at_reddit: datetime
+    website: Optional[str] = None
+    created_at_source: datetime
     summary: str
     problem: str
     mvp_idea: str
@@ -64,7 +72,7 @@ class PostDetailSchema(Schema):
 
 class PostFilterSchema(FilterSchema):
     """Schema para filtros de posts."""
-    subreddit: Optional[int] = None
+    topic: Optional[int] = None
     analyzed: Optional[bool] = None
     min_score: Optional[int] = None
     search: Optional[str] = None
@@ -89,13 +97,13 @@ def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
     from django.db.models import Exists, OuterRef
 
     user = request.auth
-    posts = Post.objects.select_related('subreddit').annotate(
+    posts = Post.objects.select_related('topic').annotate(
         is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
     ).all()
 
     # Aplicar filtros
-    if filters.subreddit:
-        posts = posts.filter(subreddit_id=filters.subreddit)
+    if filters.topic:
+        posts = posts.filter(topic_id=filters.topic)
 
     if filters.analyzed is not None:
         posts = posts.filter(analyzed=filters.analyzed)
@@ -124,9 +132,8 @@ def list_favorites(request):
     from django.db.models.functions import Coalesce
 
     user = request.auth
-    # Obtener los IDs de posts favoritos
     favorite_ids = Favorite.objects.filter(user=user).values_list('post_id', flat=True)
-    posts = Post.objects.filter(id__in=favorite_ids).select_related('subreddit').annotate(
+    posts = Post.objects.filter(id__in=favorite_ids).select_related('topic').annotate(
         is_favorite=Value(True)
     )
     return posts
@@ -143,7 +150,7 @@ def get_post(request, post_id: int):
 
     user = request.auth
     post = get_object_or_404(
-        Post.objects.select_related('subreddit').annotate(
+        Post.objects.select_related('topic').annotate(
             is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
         ),
         id=post_id
@@ -164,7 +171,6 @@ def toggle_favorite(request, post_id: int):
     favorite, created = Favorite.objects.get_or_create(user=user, post=post)
 
     if not created:
-        # Ya existía, lo eliminamos
         favorite.delete()
         return {
             "is_favorite": False,

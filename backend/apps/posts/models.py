@@ -3,51 +3,70 @@ Modelos para la app posts.
 """
 
 from django.db import models
-from apps.subreddits.models import Subreddit
+from apps.topics.models import Topic
 
 
 class Post(models.Model):
     """
-    Modelo para almacenar posts de Reddit.
+    Modelo para almacenar productos de Product Hunt.
 
-    Cada post representa una publicación de Reddit que contiene
-    una idea, problema o necesidad expresada por un usuario.
+    Cada post representa un producto de Product Hunt que contiene
+    una idea, problema o necesidad expresada por sus creadores.
     """
 
-    # Datos del post de Reddit
-    reddit_id = models.CharField(
+    # Datos del producto de Product Hunt
+    external_id = models.CharField(
         max_length=50,
         unique=True,
-        help_text="ID único del post en Reddit"
+        help_text="ID único del producto en Product Hunt"
     )
-    subreddit = models.ForeignKey(
-        Subreddit,
+    topic = models.ForeignKey(
+        Topic,
         on_delete=models.CASCADE,
         related_name='posts',
-        help_text="Subreddit de origen"
+        help_text="Topic de origen"
     )
     title = models.CharField(
         max_length=300,
-        help_text="Título del post"
+        help_text="Nombre del producto"
+    )
+    tagline = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Tagline del producto"
     )
     content = models.TextField(
         blank=True,
-        help_text="Contenido completo del post"
+        help_text="Descripción completa del producto"
     )
     author = models.CharField(
         max_length=100,
-        help_text="Autor del post en Reddit"
+        help_text="Maker principal del producto"
     )
     score = models.IntegerField(
         default=0,
-        help_text="Puntuación (upvotes) en Reddit"
+        help_text="Puntuación (votos) en Product Hunt"
+    )
+    votes_count = models.IntegerField(
+        default=0,
+        help_text="Número de votos"
+    )
+    comments_count = models.IntegerField(
+        default=0,
+        help_text="Número de comentarios"
     )
     url = models.URLField(
         max_length=500,
-        help_text="URL del post en Reddit"
+        help_text="URL del producto en Product Hunt"
     )
-    created_at_reddit = models.DateTimeField(
-        help_text="Fecha de creación en Reddit"
+    website = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="URL del sitio web del producto"
+    )
+    created_at_source = models.DateTimeField(
+        help_text="Fecha de creación en Product Hunt"
     )
 
     # Campos de análisis IA (opcionales hasta que se analice)
@@ -98,14 +117,14 @@ class Post(models.Model):
     )
 
     class Meta:
-        ordering = ['-created_at_reddit']
+        ordering = ['-created_at_source']
         verbose_name = "Post"
         verbose_name_plural = "Posts"
         indexes = [
-            models.Index(fields=['reddit_id']),
+            models.Index(fields=['external_id']),
             models.Index(fields=['analyzed']),
-            models.Index(fields=['-created_at_reddit']),
+            models.Index(fields=['-created_at_source']),
         ]
 
     def __str__(self):
-        return f"{self.title[:50]}... (r/{self.subreddit.name})"
+        return f"{self.title[:50]}... ({self.topic.name})"

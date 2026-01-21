@@ -12,16 +12,16 @@ class PostAdmin(admin.ModelAdmin):
     Configuración del panel de administración para Post.
     """
 
-    list_display = ['title', 'subreddit', 'author', 'score', 'analyzed', 'created_at_reddit']
-    list_filter = ['analyzed', 'subreddit', 'created_at_reddit']
-    search_fields = ['title', 'content', 'author', 'reddit_id']
-    readonly_fields = ['reddit_id', 'created_at', 'updated_at', 'analyzed_at']
-    ordering = ['-created_at_reddit']
-    date_hierarchy = 'created_at_reddit'
+    list_display = ['title', 'topic', 'author', 'score', 'votes_count', 'comments_count', 'analyzed', 'created_at_source']
+    list_filter = ['analyzed', 'topic', 'created_at_source']
+    search_fields = ['title', 'content', 'tagline', 'author', 'external_id']
+    readonly_fields = ['external_id', 'created_at', 'updated_at', 'analyzed_at']
+    ordering = ['-created_at_source']
+    date_hierarchy = 'created_at_source'
 
     fieldsets = (
-        ('Datos de Reddit', {
-            'fields': ('reddit_id', 'subreddit', 'title', 'content', 'author', 'score', 'url', 'created_at_reddit')
+        ('Datos de Product Hunt', {
+            'fields': ('external_id', 'topic', 'title', 'tagline', 'content', 'author', 'score', 'votes_count', 'comments_count', 'url', 'website', 'created_at_source')
         }),
         ('Análisis IA', {
             'fields': ('analyzed', 'analyzed_at', 'summary', 'problem', 'mvp_idea', 'target_audience', 'potential_score', 'tags'),
@@ -34,6 +34,6 @@ class PostAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        """Optimiza consultas incluyendo el subreddit relacionado."""
+        """Optimiza consultas incluyendo el topic relacionado."""
         qs = super().get_queryset(request)
-        return qs.select_related('subreddit')
+        return qs.select_related('topic')

@@ -1,31 +1,31 @@
 """
-Modelos para la app subreddits.
+Modelos para la app topics.
 """
 
 from django.db import models
 
 
-class Subreddit(models.Model):
+class Topic(models.Model):
     """
-    Modelo para gestionar subreddits a monitorear.
+    Modelo para gestionar topics a monitorear.
 
-    Cada subreddit representa una comunidad de Reddit que queremos
-    monitorear para encontrar posts con ideas/problemas/necesidades.
+    Cada topic representa una categoría de Product Hunt que queremos
+    monitorear para encontrar productos con ideas/problemas/necesidades.
     """
 
     name = models.CharField(
         max_length=100,
         unique=True,
-        help_text="Nombre del subreddit (ej: SomebodyMakeThis)"
+        help_text="Nombre del topic (ej: artificial-intelligence)"
     )
-    active = models.BooleanField(
+    is_active = models.BooleanField(
         default=True,
         help_text="Si está activo para scraping"
     )
     last_sync = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Última vez que se sincronizó con Reddit"
+        help_text="Última vez que se sincronizó con Product Hunt"
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -38,8 +38,9 @@ class Subreddit(models.Model):
 
     class Meta:
         ordering = ['name']
-        verbose_name = "Subreddit"
-        verbose_name_plural = "Subreddits"
+        verbose_name = "Topic"
+        verbose_name_plural = "Topics"
+        db_table = 'subreddits_subreddit'
 
     def __str__(self):
-        return f"r/{self.name}"
+        return self.name

@@ -10,18 +10,18 @@ from .auth import JWTAuth
 
 # Crear instancia de la API
 api = NinjaAPI(
-    title="Reddit MVP Finder API",
+    title="Product Hunt MVP Finder API",
     version="1.0.0",
-    description="API para gestionar posts de Reddit y encontrar ideas de MVPs"
+    description="API para gestionar productos de Product Hunt y encontrar ideas de MVPs"
 )
 
 # Registrar routers de las apps
 from apps.posts.api import router as posts_router
-from apps.subreddits.api import router as subreddits_router
+from apps.topics.api import router as topics_router
 from apps.scraper.api import router as scraper_router
 
 api.add_router("/posts", posts_router)
-api.add_router("/subreddits", subreddits_router)
+api.add_router("/topics", topics_router)
 api.add_router("/scraper", scraper_router)
 
 

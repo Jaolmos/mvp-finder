@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     # Apps propias
     'apps.users',
     'apps.posts',
-    'apps.subreddits',
+    'apps.topics',
     'apps.scraper',
 ]
 
@@ -87,10 +87,8 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Reddit API
-REDDIT_CLIENT_ID = os.environ.get('REDDIT_CLIENT_ID', '')
-REDDIT_CLIENT_SECRET = os.environ.get('REDDIT_CLIENT_SECRET', '')
-REDDIT_USER_AGENT = os.environ.get('REDDIT_USER_AGENT', 'RedditMVPFinder/1.0')
+# Product Hunt API
+PRODUCT_HUNT_API_KEY = os.environ.get('PRODUCT_HUNT_API_KEY', '')
 
 # Django REST Framework
 REST_FRAMEWORK = {

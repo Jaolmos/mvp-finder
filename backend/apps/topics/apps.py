@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class SubredditsConfig(AppConfig):
+class TopicsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.subreddits'
+    name = 'apps.topics'
+    verbose_name = 'Topics'
