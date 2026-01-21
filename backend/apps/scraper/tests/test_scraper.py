@@ -1,68 +1,75 @@
 """
-Tests para el scraper de Reddit.
+Tests para el scraper de Product Hunt.
 """
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
+from datetime import datetime
 
-from apps.scraper.scraper import RedditScraper
-from apps.scraper.reddit_client import RedditClient
-from apps.subreddits.models import Subreddit
+from apps.scraper.scraper import ProductHuntScraper
+from apps.scraper.producthunt_client import ProductHuntClient
+from apps.topics.models import Topic
 from apps.posts.models import Post
 
 
 @pytest.fixture
-def mock_reddit_client():
-    """Mock del cliente de Reddit."""
-    with patch('apps.scraper.scraper.RedditClient.get_client') as mock:
+def mock_ph_client():
+    """Mock del cliente de Product Hunt."""
+    with patch('apps.scraper.scraper.ProductHuntClient.get_client') as mock:
         yield mock.return_value
 
 
 @pytest.fixture
-def mock_submission():
-    """Mock de un submission de PRAW."""
-    submission = Mock()
-    submission.id = "test123"
-    submission.title = "Test Post Title"
-    submission.selftext = "Test post content"
-    submission.author = Mock()
-    submission.author.__str__ = Mock(return_value="testuser")
-    submission.score = 100
-    submission.url = "https://reddit.com/r/test/comments/test123"
-    submission.created_utc = 1704067200  # 2024-01-01 00:00:00 UTC
-    return submission
-
-
-@pytest.fixture
-def mock_subreddit_praw(mock_submission):
-    """Mock de un subreddit de PRAW."""
-    subreddit = Mock()
-    subreddit.top = Mock(return_value=[mock_submission])
-    return subreddit
+def mock_ph_response():
+    """Mock de respuesta de la API de Product Hunt."""
+    return {
+        'edges': [
+            {
+                'cursor': 'cursor123',
+                'node': {
+                    'id': 'ph_test123',
+                    'name': 'Test Product',
+                    'tagline': 'A great product',
+                    'description': 'This is a test product description.',
+                    'url': 'https://producthunt.com/posts/test-product',
+                    'website': 'https://testproduct.com',
+                    'votesCount': 500,
+                    'commentsCount': 45,
+                    'createdAt': '2026-01-15T10:00:00Z',
+                    'makers': [
+                        {'username': 'testmaker'}
+                    ]
+                }
+            }
+        ],
+        'pageInfo': {
+            'hasNextPage': False,
+            'endCursor': 'cursor123'
+        }
+    }
 
 
 @pytest.mark.django_db
-class TestRedditScraper:
-    """Tests para la clase RedditScraper."""
+class TestProductHuntScraper:
+    """Tests para la clase ProductHuntScraper."""
 
-    def test_scraper_initialization(self, mock_reddit_client):
+    def test_scraper_initialization(self, mock_ph_client):
         """Test: El scraper se inicializa correctamente."""
-        scraper = RedditScraper()
-        assert scraper.reddit is not None
+        scraper = ProductHuntScraper()
+        assert scraper.client is not None
 
-    def test_scrape_subreddit_creates_new_posts(
+    def test_scrape_topic_creates_new_posts(
         self,
-        mock_reddit_client,
-        mock_subreddit_praw,
-        subreddit
+        mock_ph_client,
+        mock_ph_response,
+        topic
     ):
         """Test: Scraping crea posts nuevos."""
         # Setup
-        mock_reddit_client.subreddit.return_value = mock_subreddit_praw
-        scraper = RedditScraper()
+        mock_ph_client.fetch_posts.return_value = mock_ph_response
+        scraper = ProductHuntScraper()
 
         # Execute
-        result = scraper.scrape_subreddit(subreddit.name, limit=10)
+        result = scraper.scrape_topic(topic.name, limit=10)
 
         # Assert
         assert result['new_posts'] == 1
@@ -72,40 +79,37 @@ class TestRedditScraper:
 
         # Verificar el post creado
         post = Post.objects.first()
-        assert post.reddit_id == "test123"
-        assert post.title == "Test Post Title"
-        assert post.subreddit == subreddit
+        assert post.external_id == "ph_test123"
+        assert post.title == "Test Product"
+        assert post.topic == topic
 
-    def test_scrape_subreddit_skips_duplicates(
+    def test_scrape_topic_skips_duplicates(
         self,
-        mock_reddit_client,
-        mock_subreddit_praw,
-        subreddit,
+        mock_ph_client,
+        mock_ph_response,
+        topic,
         post
     ):
         """Test: Scraping omite posts duplicados."""
-        # Setup - el post ya existe
-        mock_reddit_client.subreddit.return_value = mock_subreddit_praw
-        scraper = RedditScraper()
-
-        # Cambiar el mock para que retorne el mismo reddit_id que el post existente
-        mock_submission = mock_subreddit_praw.top.return_value[0]
-        mock_submission.id = post.reddit_id
+        # Setup - modificar mock para usar el mismo external_id
+        mock_ph_response['edges'][0]['node']['id'] = post.external_id
+        mock_ph_client.fetch_posts.return_value = mock_ph_response
+        scraper = ProductHuntScraper()
 
         # Execute
-        result = scraper.scrape_subreddit(subreddit.name, limit=10)
+        result = scraper.scrape_topic(topic.name, limit=10)
 
         # Assert
         assert result['new_posts'] == 0
         assert result['skipped_posts'] == 1
         assert Post.objects.count() == 1  # No se creó uno nuevo
 
-    def test_scrape_subreddit_nonexistent(self, mock_reddit_client):
-        """Test: Scraping de subreddit que no existe en BD."""
-        scraper = RedditScraper()
+    def test_scrape_topic_nonexistent(self, mock_ph_client):
+        """Test: Scraping de topic que no existe en BD."""
+        scraper = ProductHuntScraper()
 
         # Execute
-        result = scraper.scrape_subreddit("NonExistent", limit=10)
+        result = scraper.scrape_topic("nonexistent-topic", limit=10)
 
         # Assert
         assert result['new_posts'] == 0
@@ -113,160 +117,182 @@ class TestRedditScraper:
         assert len(result['errors']) == 1
         assert "no existe en BD" in result['errors'][0]
 
-    def test_scrape_subreddit_updates_last_sync(
+    def test_scrape_topic_updates_last_sync(
         self,
-        mock_reddit_client,
-        mock_subreddit_praw,
-        subreddit
+        mock_ph_client,
+        mock_ph_response,
+        topic
     ):
-        """Test: Scraping actualiza last_sync del subreddit."""
+        """Test: Scraping actualiza last_sync del topic."""
         # Setup
-        mock_reddit_client.subreddit.return_value = mock_subreddit_praw
-        scraper = RedditScraper()
-        original_last_sync = subreddit.last_sync
+        mock_ph_client.fetch_posts.return_value = mock_ph_response
+        scraper = ProductHuntScraper()
+        original_last_sync = topic.last_sync
 
         # Execute
-        scraper.scrape_subreddit(subreddit.name, limit=10)
+        scraper.scrape_topic(topic.name, limit=10)
 
         # Assert
-        subreddit.refresh_from_db()
-        assert subreddit.last_sync != original_last_sync
+        topic.refresh_from_db()
+        assert topic.last_sync != original_last_sync
 
-    def test_scrape_all_active_subreddits(
+    def test_scrape_all_active_topics(
         self,
-        mock_reddit_client,
-        subreddit
+        mock_ph_client,
+        topic
     ):
-        """Test: Scraping de todos los subreddits activos."""
-        # Setup - Crear segundo subreddit activo
-        subreddit2 = Subreddit.objects.create(name="Python", active=True)
+        """Test: Scraping de todos los topics activos."""
+        # Setup - Crear segundo topic activo
+        topic2 = Topic.objects.create(name="productivity", is_active=True)
 
-        # Crear mock submissions diferentes para cada subreddit
-        def create_mock_subreddit(name):
-            mock_sub = Mock()
-            mock_submission = Mock()
-            mock_submission.id = f"{name}_post123"
-            mock_submission.title = f"Test Post from {name}"
-            mock_submission.selftext = "Test content"
-            mock_submission.author = Mock()
-            mock_submission.author.__str__ = Mock(return_value="testuser")
-            mock_submission.score = 100
-            mock_submission.url = f"https://reddit.com/r/{name}/comments/test123"
-            mock_submission.created_utc = 1704067200
-            mock_sub.top = Mock(return_value=[mock_submission])
-            return mock_sub
+        # Crear mock responses diferentes para cada topic
+        def create_mock_response(topic_name):
+            return {
+                'edges': [{
+                    'cursor': 'cursor123',
+                    'node': {
+                        'id': f'ph_{topic_name}_post123',
+                        'name': f'Test Product from {topic_name}',
+                        'tagline': 'A great product',
+                        'description': 'Test content',
+                        'url': f'https://producthunt.com/posts/{topic_name}-test',
+                        'website': f'https://{topic_name}.com',
+                        'votesCount': 100,
+                        'commentsCount': 10,
+                        'createdAt': '2026-01-15T10:00:00Z',
+                        'makers': [{'username': 'testmaker'}]
+                    }
+                }],
+                'pageInfo': {'hasNextPage': False, 'endCursor': 'cursor123'}
+            }
 
-        # Configurar mock para retornar diferentes subreddits según el nombre
-        def get_subreddit_side_effect(name):
-            return create_mock_subreddit(name)
-
-        mock_reddit_client.subreddit.side_effect = get_subreddit_side_effect
-        scraper = RedditScraper()
+        mock_ph_client.fetch_posts.side_effect = [
+            create_mock_response(topic.name),
+            create_mock_response(topic2.name)
+        ]
+        scraper = ProductHuntScraper()
 
         # Execute
-        results = scraper.scrape_all_active_subreddits(limit=10)
+        results = scraper.scrape_all_active_topics(limit=10)
 
         # Assert
         assert len(results) == 2
         assert Post.objects.count() == 2
 
-    def test_scrape_all_skips_inactive_subreddits(
+    def test_scrape_all_skips_inactive_topics(
         self,
-        mock_reddit_client,
-        mock_subreddit_praw
+        mock_ph_client,
+        mock_ph_response
     ):
-        """Test: Scraping omite subreddits inactivos."""
+        """Test: Scraping omite topics inactivos."""
         # Setup
-        mock_reddit_client.subreddit.return_value = mock_subreddit_praw
-        scraper = RedditScraper()
+        mock_ph_client.fetch_posts.return_value = mock_ph_response
+        scraper = ProductHuntScraper()
 
-        # Crear subreddit inactivo
-        Subreddit.objects.create(name="Inactive", active=False)
+        # Crear topic inactivo
+        Topic.objects.create(name="inactive-topic", is_active=False)
 
         # Execute
-        results = scraper.scrape_all_active_subreddits(limit=10)
+        results = scraper.scrape_all_active_topics(limit=10)
 
         # Assert
         assert len(results) == 0  # No debería procesar ninguno
 
-    def test_create_post_from_submission(
+    def test_create_post_from_node(
         self,
-        mock_reddit_client,
-        mock_submission,
-        subreddit
+        mock_ph_client,
+        topic
     ):
-        """Test: Creación de post desde submission de PRAW."""
-        scraper = RedditScraper()
+        """Test: Creación de post desde nodo de Product Hunt."""
+        scraper = ProductHuntScraper()
+
+        node = {
+            'id': 'ph_node123',
+            'name': 'Test Node Product',
+            'tagline': 'Test tagline',
+            'description': 'Test description',
+            'url': 'https://producthunt.com/posts/test-node',
+            'website': 'https://testnode.com',
+            'votesCount': 200,
+            'commentsCount': 25,
+            'createdAt': '2026-01-15T10:00:00Z',
+            'makers': [{'username': 'nodemaker'}]
+        }
 
         # Execute
-        post = scraper._create_post_from_submission(mock_submission, subreddit)
+        post = scraper._create_post_from_node(node, topic)
 
         # Assert
         assert post is not None
-        assert post.reddit_id == "test123"
-        assert post.title == "Test Post Title"
-        assert post.content == "Test post content"
-        assert post.author == "testuser"
-        assert post.score == 100
-        assert post.subreddit == subreddit
+        assert post.external_id == "ph_node123"
+        assert post.title == "Test Node Product"
+        assert post.tagline == "Test tagline"
+        assert post.author == "nodemaker"
+        assert post.score == 200
+        assert post.topic == topic
 
-    def test_create_post_from_submission_no_selftext(self, mock_reddit_client, subreddit):
-        """Test: Creación de post sin selftext (solo link)."""
-        scraper = RedditScraper()
+    def test_create_post_from_node_no_makers(self, mock_ph_client, topic):
+        """Test: Creación de post sin makers."""
+        scraper = ProductHuntScraper()
 
-        # Mock submission sin selftext
-        submission = Mock()
-        submission.id = "link123"
-        submission.title = "Link Post"
-        submission.selftext = ""
-        submission.author = Mock()
-        submission.author.__str__ = Mock(return_value="linkuser")
-        submission.score = 50
-        submission.url = "https://example.com"
-        submission.created_utc = 1704067200
+        node = {
+            'id': 'ph_nomaker123',
+            'name': 'No Maker Product',
+            'tagline': 'Test tagline',
+            'description': 'Content',
+            'url': 'https://producthunt.com/posts/nomaker',
+            'website': None,
+            'votesCount': 50,
+            'commentsCount': 5,
+            'createdAt': '2026-01-15T10:00:00Z',
+            'makers': []
+        }
 
         # Execute
-        post = scraper._create_post_from_submission(submission, subreddit)
+        post = scraper._create_post_from_node(node, topic)
 
         # Assert
         assert post is not None
-        assert "Link: https://example.com" in post.content
+        assert post.author == "unknown"
 
-    def test_create_post_from_submission_deleted_author(self, mock_reddit_client, subreddit):
-        """Test: Creación de post con autor eliminado."""
-        scraper = RedditScraper()
+    def test_create_post_from_node_no_description(self, mock_ph_client, topic):
+        """Test: Creación de post sin description (usa tagline)."""
+        scraper = ProductHuntScraper()
 
-        # Mock submission con autor None
-        submission = Mock()
-        submission.id = "deleted123"
-        submission.title = "Deleted Author Post"
-        submission.selftext = "Content"
-        submission.author = None
-        submission.score = 10
-        submission.url = "https://reddit.com/deleted"
-        submission.created_utc = 1704067200
+        node = {
+            'id': 'ph_nodesc123',
+            'name': 'No Description Product',
+            'tagline': 'Just a tagline',
+            'description': '',
+            'url': 'https://producthunt.com/posts/nodesc',
+            'website': None,
+            'votesCount': 30,
+            'commentsCount': 2,
+            'createdAt': '2026-01-15T10:00:00Z',
+            'makers': [{'username': 'maker'}]
+        }
 
         # Execute
-        post = scraper._create_post_from_submission(submission, subreddit)
+        post = scraper._create_post_from_node(node, topic)
 
         # Assert
         assert post is not None
-        assert post.author == "[deleted]"
+        assert post.content == "Just a tagline"
 
-    def test_get_scraping_summary(self, mock_reddit_client):
+    def test_get_scraping_summary(self, mock_ph_client):
         """Test: Generación de resumen de scraping."""
-        scraper = RedditScraper()
+        scraper = ProductHuntScraper()
 
         results = [
-            {'subreddit': 'Python', 'new_posts': 5, 'skipped_posts': 2, 'errors': []},
-            {'subreddit': 'Django', 'new_posts': 3, 'skipped_posts': 1, 'errors': ['error1']},
+            {'topic': 'artificial-intelligence', 'new_posts': 5, 'skipped_posts': 2, 'errors': []},
+            {'topic': 'productivity', 'new_posts': 3, 'skipped_posts': 1, 'errors': ['error1']},
         ]
 
         # Execute
         summary = scraper.get_scraping_summary(results)
 
         # Assert
-        assert summary['subreddits_processed'] == 2
+        assert summary['topics_processed'] == 2
         assert summary['total_new_posts'] == 8
         assert summary['total_skipped_posts'] == 3
         assert summary['total_errors'] == 1
@@ -274,59 +300,49 @@ class TestRedditScraper:
 
 
 @pytest.mark.django_db
-class TestRedditClient:
-    """Tests para RedditClient."""
+class TestProductHuntClient:
+    """Tests para ProductHuntClient."""
 
-    def test_client_requires_credentials(self):
-        """Test: Cliente requiere credenciales."""
+    def test_client_requires_api_key(self):
+        """Test: Cliente requiere API key."""
+        ProductHuntClient.reset_client()
         with patch.dict('os.environ', {}, clear=True):
-            with pytest.raises(ValueError, match="Faltan credenciales"):
-                RedditClient.get_client()
+            with pytest.raises(ValueError, match="Falta API key"):
+                ProductHuntClient.get_client()
 
     def test_client_singleton_pattern(self):
         """Test: Cliente usa patrón singleton."""
         with patch.dict('os.environ', {
-            'REDDIT_CLIENT_ID': 'test_id',
-            'REDDIT_CLIENT_SECRET': 'test_secret'
+            'PRODUCT_HUNT_API_KEY': 'test_key'
         }):
             # Reset singleton
-            RedditClient._instance = None
+            ProductHuntClient.reset_client()
 
-            with patch('praw.Reddit') as mock_praw:
-                client1 = RedditClient.get_client()
-                client2 = RedditClient.get_client()
+            client1 = ProductHuntClient.get_client()
+            client2 = ProductHuntClient.get_client()
 
-                assert client1 is client2
-                # PRAW debe ser llamado solo una vez
-                assert mock_praw.call_count == 1
+            assert client1 is client2
 
-    def test_client_is_read_only(self):
-        """Test: Cliente se configura en modo read-only."""
+    def test_client_headers(self):
+        """Test: Cliente configura headers correctamente."""
         with patch.dict('os.environ', {
-            'REDDIT_CLIENT_ID': 'test_id',
-            'REDDIT_CLIENT_SECRET': 'test_secret'
+            'PRODUCT_HUNT_API_KEY': 'test_key_123'
         }):
-            RedditClient._instance = None
+            ProductHuntClient.reset_client()
 
-            with patch('praw.Reddit') as mock_praw:
-                mock_reddit = Mock()
-                mock_reddit.read_only = False
-                mock_praw.return_value = mock_reddit
+            client = ProductHuntClient.get_client()
 
-                client = RedditClient.get_client()
-
-                # Verificar que se puso en read_only
-                assert mock_reddit.read_only is True
+            assert client.headers['Authorization'] == 'Bearer test_key_123'
+            assert client.headers['Content-Type'] == 'application/json'
 
 
 # Instrucciones de ejecución:
 #
 # Ejecutar todos los tests del scraper:
-#   cd backend
-#   uv run pytest apps/scraper/tests/ -v
+#   docker compose exec backend uv run pytest apps/scraper/tests/ -v
 #
 # Ejecutar este archivo específico:
-#   uv run pytest apps/scraper/tests/test_scraper.py -v
+#   docker compose exec backend uv run pytest apps/scraper/tests/test_scraper.py -v
 #
 # Ejecutar con cobertura:
-#   uv run pytest apps/scraper/tests/ -v --cov=apps.scraper
+#   docker compose exec backend uv run pytest apps/scraper/tests/ -v --cov=apps.scraper

@@ -112,7 +112,8 @@ def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
         posts = posts.filter(score__gte=filters.min_score)
 
     if filters.search:
-        posts = posts.filter(title__icontains=filters.search) | posts.filter(content__icontains=filters.search)
+        from django.db.models import Q
+        posts = posts.filter(Q(title__icontains=filters.search) | Q(content__icontains=filters.search))
 
     if filters.is_favorite:
         posts = posts.filter(is_favorite=True)

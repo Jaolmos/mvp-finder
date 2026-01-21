@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.subreddits.models import Subreddit
+from apps.topics.models import Topic
 from apps.posts.models import Post
 
 User = get_user_model()
@@ -61,67 +61,75 @@ def access_token(tokens):
 
 
 @pytest.fixture
-def subreddit(db):
+def topic(db):
     """
-    Fixture que crea un subreddit de prueba.
+    Fixture que crea un topic de prueba.
     """
-    return Subreddit.objects.create(
-        name='SomebodyMakeThis',
-        active=True
+    return Topic.objects.create(
+        name='artificial-intelligence',
+        is_active=True
     )
 
 
 @pytest.fixture
-def inactive_subreddit(db):
+def inactive_topic(db):
     """
-    Fixture que crea un subreddit inactivo.
+    Fixture que crea un topic inactivo.
     """
-    return Subreddit.objects.create(
-        name='InactiveSubreddit',
-        active=False
+    return Topic.objects.create(
+        name='marketing',
+        is_active=False
     )
 
 
 @pytest.fixture
-def post(subreddit):
+def post(topic):
     """
     Fixture que crea un post de prueba sin analizar.
     """
     return Post.objects.create(
-        reddit_id='abc123',
-        subreddit=subreddit,
-        title='I need an app to track my expenses',
-        content='I\'m looking for a simple app to track shared expenses with roommates.',
-        author='testauthor',
-        score=42,
-        url='https://reddit.com/r/SomebodyMakeThis/comments/abc123',
-        created_at_reddit=timezone.now(),
+        external_id='ph_test001',
+        topic=topic,
+        title='AI Code Assistant',
+        tagline='Your intelligent pair programmer',
+        content='AI-powered code assistant that helps developers write better code.',
+        author='testmaker',
+        score=500,
+        votes_count=500,
+        comments_count=45,
+        url='https://producthunt.com/posts/ai-code-assistant',
+        website='https://aicodeassistant.com',
+        created_at_source=timezone.now(),
         analyzed=False
     )
 
 
 @pytest.fixture
-def analyzed_post(subreddit):
+def analyzed_post(topic):
     """
     Fixture que crea un post analizado por IA.
     """
     return Post.objects.create(
-        reddit_id='xyz789',
-        subreddit=subreddit,
-        title='Need a tool for team collaboration',
-        content='Looking for a better way to manage team tasks and communication.',
-        author='anotheruser',
-        score=100,
-        url='https://reddit.com/r/SomebodyMakeThis/comments/xyz789',
-        created_at_reddit=timezone.now(),
+        external_id='ph_test002',
+        topic=topic,
+        title='FocusFlow - Productivity Timer',
+        tagline='Smart pomodoro with distraction blocking',
+        content='Combine pomodoro technique with AI-powered website blocking.',
+        author='productivityguru',
+        score=800,
+        votes_count=800,
+        comments_count=67,
+        url='https://producthunt.com/posts/focusflow',
+        website='https://focusflow.app',
+        created_at_source=timezone.now(),
         analyzed=True,
         analyzed_at=timezone.now(),
-        summary='Team collaboration tool for task management',
-        problem='Difficulty managing team tasks and communication',
-        mvp_idea='Simple kanban board with built-in chat',
-        target_audience='Small teams, startups',
+        summary='Timer pomodoro con bloqueo inteligente de distracciones',
+        problem='Las distracciones digitales reducen la productividad',
+        mvp_idea='App de pomodoro que bloquea sitios automáticamente',
+        target_audience='Trabajadores remotos, estudiantes',
         potential_score=8,
-        tags='productivity,collaboration,team'
+        tags='productividad,focus,pomodoro'
     )
 
 
@@ -158,7 +166,7 @@ def authenticated_client(api_client, tokens):
 
 
 # Ejecutar estos tests:
-#   uv run pytest -v
+#   docker compose exec backend uv run pytest -v
 #
 # Ejecutar con cobertura:
-#   uv run pytest --cov=apps -v
+#   docker compose exec backend uv run pytest --cov=apps -v

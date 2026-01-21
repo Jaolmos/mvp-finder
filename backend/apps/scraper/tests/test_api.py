@@ -1,5 +1,5 @@
 """
-Tests para API endpoints del scraper.
+Tests para API endpoints del scraper de Product Hunt.
 """
 import pytest
 from unittest.mock import patch, Mock
@@ -14,11 +14,11 @@ def scraper_client(api_client, access_token):
 
 @pytest.mark.django_db
 class TestScraperAPI:
-    """Tests para endpoints del scraper."""
+    """Tests para endpoints del scraper de Product Hunt."""
 
-    @patch('apps.scraper.api.sync_reddit_posts.delay')
-    def test_sync_posts_all_subreddits(self, mock_task, scraper_client):
-        """Test: Endpoint para sincronizar todos los subreddits."""
+    @patch('apps.scraper.api.sync_posts.delay')
+    def test_sync_posts_all_topics(self, mock_task, scraper_client):
+        """Test: Endpoint para sincronizar todos los topics."""
         # Setup mock
         mock_task.return_value = Mock(id='task-123')
 
@@ -37,14 +37,13 @@ class TestScraperAPI:
 
         # Verificar que se llamó a la tarea con parámetros por defecto
         mock_task.assert_called_once_with(
-            subreddit_ids=None,
+            topic_ids=None,
             limit=50,
-            time_filter='week'
         )
 
-    @patch('apps.scraper.api.sync_reddit_posts.delay')
-    def test_sync_posts_specific_subreddits(self, mock_task, scraper_client, subreddit):
-        """Test: Endpoint para sincronizar subreddits específicos."""
+    @patch('apps.scraper.api.sync_posts.delay')
+    def test_sync_posts_specific_topics(self, mock_task, scraper_client, topic):
+        """Test: Endpoint para sincronizar topics específicos."""
         # Setup mock
         mock_task.return_value = Mock(id='task-456')
 
@@ -52,9 +51,8 @@ class TestScraperAPI:
         response = scraper_client.post(
             "/scraper/sync/",
             json={
-                "subreddit_ids": [subreddit.id],
-                "limit": 100,
-                "time_filter": "month"
+                "topic_ids": [topic.id],
+                "limit": 100
             }
         )
 
@@ -65,9 +63,8 @@ class TestScraperAPI:
 
         # Verificar parámetros personalizados
         mock_task.assert_called_once_with(
-            subreddit_ids=[subreddit.id],
+            topic_ids=[topic.id],
             limit=100,
-            time_filter='month'
         )
 
     def test_sync_posts_requires_auth(self, api_client):
@@ -78,9 +75,9 @@ class TestScraperAPI:
         # Assert
         assert response.status_code == 401
 
-    @patch('apps.scraper.api.test_reddit_connection.delay')
+    @patch('apps.scraper.api.test_connection.delay')
     def test_test_connection(self, mock_task, scraper_client):
-        """Test: Endpoint para probar conexión con Reddit."""
+        """Test: Endpoint para probar conexión con Product Hunt."""
         # Setup mock
         mock_task.return_value = Mock(id='test-789')
 
@@ -107,8 +104,7 @@ class TestScraperAPI:
 # Instrucciones de ejecución:
 #
 # Ejecutar tests de API del scraper:
-#   cd backend
-#   uv run pytest apps/scraper/tests/test_api.py -v
+#   docker compose exec backend uv run pytest apps/scraper/tests/test_api.py -v
 #
 # Ejecutar todos los tests del scraper:
-#   uv run pytest apps/scraper/tests/ -v
+#   docker compose exec backend uv run pytest apps/scraper/tests/ -v
