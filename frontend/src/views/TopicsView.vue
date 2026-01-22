@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useTopicsStore } from '@/stores/topics'
+import { scraperService } from '@/services'
 
 const topicsStore = useTopicsStore()
 
@@ -9,6 +10,11 @@ const topicsStore = useTopicsStore()
 const showModal = ref(false)
 const modalMode = ref<'create' | 'edit'>('create')
 const editingId = ref<number | null>(null)
+
+// Estado de sincronización
+const syncingTopicId = ref<number | null>(null)
+const syncMessage = ref('')
+const syncError = ref('')
 
 // Formulario
 const formData = ref({
@@ -103,6 +109,38 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   })
 }
+
+// Sincronizar topic individual
+const handleSyncTopic = async (topicId: number) => {
+  try {
+    syncingTopicId.value = topicId
+    syncError.value = ''
+    syncMessage.value = ''
+
+    const response = await scraperService.syncPosts({ topic_ids: [topicId] })
+    syncMessage.value = response.message
+
+    // Esperar 3 segundos y recargar topics para actualizar last_sync
+    setTimeout(async () => {
+      await topicsStore.fetchTopics()
+      syncMessage.value = 'Sincronización completada'
+
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => {
+        syncMessage.value = ''
+      }, 3000)
+    }, 3000)
+  } catch (error: any) {
+    syncError.value = error.response?.data?.message || 'Error al sincronizar topic'
+
+    // Limpiar error después de 5 segundos
+    setTimeout(() => {
+      syncError.value = ''
+    }, 5000)
+  } finally {
+    syncingTopicId.value = null
+  }
+}
 </script>
 
 <template>
@@ -117,6 +155,22 @@ const formatDate = (dateString: string) => {
         >
           + Añadir Topic
         </button>
+      </div>
+
+      <!-- Mensajes de sincronización -->
+      <div v-if="syncMessage || syncError" class="mb-6">
+        <div
+          v-if="syncMessage"
+          class="bg-secondary-500/20 border border-secondary-500 text-secondary-300 px-4 py-3 rounded-lg"
+        >
+          {{ syncMessage }}
+        </div>
+        <div
+          v-if="syncError"
+          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
+        >
+          {{ syncError }}
+        </div>
       </div>
 
       <!-- Estado de carga -->
@@ -239,6 +293,32 @@ const formatDate = (dateString: string) => {
 
               <!-- Acciones -->
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button
+                  @click="handleSyncTopic(topic.id)"
+                  :disabled="syncingTopicId === topic.id"
+                  class="text-accent hover:text-accent/80 mr-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Sincronizar topic"
+                >
+                  <svg
+                    v-if="syncingTopicId !== topic.id"
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <div
+                    v-else
+                    class="animate-spin rounded-full h-5 w-5 border-b-2 border-accent"
+                  ></div>
+                </button>
                 <button
                   @click="openEditModal(topic.id, topic.name, topic.is_active)"
                   class="text-primary-400 hover:text-primary-300 mr-4 transition-colors"

@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PostCard from '@/components/PostCard.vue'
 import { usePostsStore } from '@/stores/posts'
+import { scraperService } from '@/services'
 
 const router = useRouter()
 const postsStore = usePostsStore()
+
+// Estado de sincronización
+const isSyncing = ref(false)
+const syncMessage = ref('')
+const syncError = ref('')
 
 // Cargar posts al montar
 onMounted(async () => {
@@ -46,6 +52,38 @@ const handleToggleFavorite = async (id: number) => {
 
 const handlePostClick = (id: number) => {
   router.push({ name: 'post-detail', params: { id } })
+}
+
+// Sincronizar posts de Product Hunt
+const handleSync = async () => {
+  try {
+    isSyncing.value = true
+    syncError.value = ''
+    syncMessage.value = ''
+
+    const response = await scraperService.syncPosts()
+    syncMessage.value = response.message
+
+    // Esperar 3 segundos y recargar posts
+    setTimeout(async () => {
+      await postsStore.fetchPosts({ page_size: 10 })
+      syncMessage.value = 'Sincronización completada'
+
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => {
+        syncMessage.value = ''
+      }, 3000)
+    }, 3000)
+  } catch (error: any) {
+    syncError.value = error.response?.data?.message || 'Error al sincronizar posts'
+
+    // Limpiar error después de 5 segundos
+    setTimeout(() => {
+      syncError.value = ''
+    }, 5000)
+  } finally {
+    isSyncing.value = false
+  }
 }
 </script>
 
@@ -130,8 +168,24 @@ const handlePostClick = (id: number) => {
         </div>
       </div>
 
+      <!-- Mensajes de sincronización -->
+      <div v-if="syncMessage || syncError" class="mb-6">
+        <div
+          v-if="syncMessage"
+          class="bg-secondary-500/20 border border-secondary-500 text-secondary-300 px-4 py-3 rounded-lg"
+        >
+          {{ syncMessage }}
+        </div>
+        <div
+          v-if="syncError"
+          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
+        >
+          {{ syncError }}
+        </div>
+      </div>
+
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Ir a Posts -->
         <button
           @click="goToPosts"
@@ -189,6 +243,43 @@ const handlePostClick = (id: number) => {
                 d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
+          </div>
+        </button>
+
+        <!-- Sincronizar Posts -->
+        <button
+          @click="handleSync"
+          :disabled="isSyncing"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-accent hover:bg-dark-600 transition-all text-left group shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-accent transition-colors">
+                {{ isSyncing ? 'Sincronizando...' : 'Sincronizar Posts' }}
+              </h3>
+              <p class="text-dark-300 text-sm">
+                Obtener nuevos productos de Product Hunt
+              </p>
+            </div>
+            <svg
+              v-if="!isSyncing"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-accent/50 group-hover:text-accent transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <div
+              v-else
+              class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"
+            ></div>
           </div>
         </button>
       </div>
