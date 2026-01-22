@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
-import { useSubredditsStore } from '@/stores/subreddits'
+import { useTopicsStore } from '@/stores/topics'
 
-const subredditsStore = useSubredditsStore()
+const topicsStore = useTopicsStore()
 
 // Estado del modal
 const showModal = ref(false)
@@ -16,15 +16,15 @@ const formData = ref({
   is_active: true
 })
 
-// Cargar subreddits al montar
+// Cargar topics al montar
 onMounted(async () => {
-  await subredditsStore.fetchSubreddits()
+  await topicsStore.fetchTopics()
 })
 
-// Computed para obtener listas de subreddits
-const subreddits = computed(() => subredditsStore.subreddits)
-const loading = computed(() => subredditsStore.loading)
-const error = computed(() => subredditsStore.error)
+// Computed para obtener listas de topics
+const topics = computed(() => topicsStore.topics)
+const loading = computed(() => topicsStore.loading)
+const error = computed(() => topicsStore.error)
 
 // Abrir modal para crear
 const openCreateModal = () => {
@@ -42,7 +42,7 @@ const openEditModal = (id: number, name: string, is_active: boolean) => {
   modalMode.value = 'edit'
   editingId.value = id
   formData.value = {
-    name: name.replace(/^r\//, ''), // Quitar r/ si existe
+    name: name,
     is_active
   }
   showModal.value = true
@@ -56,7 +56,7 @@ const closeModal = () => {
     is_active: true
   }
   editingId.value = null
-  subredditsStore.clearError()
+  topicsStore.clearError()
 }
 
 // Guardar (crear o editar)
@@ -67,15 +67,12 @@ const handleSave = async () => {
     return
   }
 
-  // Asegurar formato r/nombre
-  const subredditName = name.startsWith('r/') ? name.slice(2) : name
-
   let success = false
   if (modalMode.value === 'create') {
-    success = await subredditsStore.createSubreddit(subredditName, formData.value.is_active)
+    success = await topicsStore.createTopic(name, formData.value.is_active)
   } else if (editingId.value !== null) {
-    success = await subredditsStore.updateSubreddit(editingId.value, {
-      name: subredditName,
+    success = await topicsStore.updateTopic(editingId.value, {
+      name: name,
       is_active: formData.value.is_active
     })
   }
@@ -87,13 +84,13 @@ const handleSave = async () => {
 
 // Toggle activo/inactivo
 const handleToggleActive = async (id: number) => {
-  await subredditsStore.toggleActive(id)
+  await topicsStore.toggleActive(id)
 }
 
-// Eliminar subreddit
+// Eliminar topic
 const handleDelete = async (id: number, name: string) => {
-  if (confirm(`¿Estás seguro de eliminar r/${name}?`)) {
-    await subredditsStore.deleteSubreddit(id)
+  if (confirm(`¿Estás seguro de eliminar "${name}"?`)) {
+    await topicsStore.deleteTopic(id)
   }
 }
 
@@ -113,18 +110,18 @@ const formatDate = (dateString: string) => {
     <div>
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <h1 class="text-xl md:text-2xl font-bold text-white">Subreddits</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-white">Topics</h1>
         <button
           @click="openCreateModal"
           class="w-full sm:w-auto px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
         >
-          + Añadir Subreddit
+          + Añadir Topic
         </button>
       </div>
 
       <!-- Estado de carga -->
       <div v-if="loading" class="flex justify-center items-center py-12">
-        <div class="text-dark-400">Cargando subreddits...</div>
+        <div class="text-dark-400">Cargando topics...</div>
       </div>
 
       <!-- Error -->
@@ -137,7 +134,7 @@ const formatDate = (dateString: string) => {
 
       <!-- Lista vacía -->
       <div
-        v-else-if="subreddits.length === 0"
+        v-else-if="topics.length === 0"
         class="bg-dark-700 rounded-lg border border-dark-600 shadow-lg"
       >
         <div class="p-12 text-center text-dark-400">
@@ -155,12 +152,12 @@ const formatDate = (dateString: string) => {
               d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
             />
           </svg>
-          <p class="text-lg mb-2">No hay subreddits configurados</p>
-          <p class="text-sm">Añade subreddits para comenzar a monitorear posts de Reddit</p>
+          <p class="text-lg mb-2">No hay topics configurados</p>
+          <p class="text-sm">Añade topics de Product Hunt para comenzar a monitorear productos</p>
         </div>
       </div>
 
-      <!-- Tabla de subreddits -->
+      <!-- Tabla de topics -->
       <div v-else class="bg-dark-700 rounded-lg border border-dark-600 shadow-lg overflow-hidden">
         <!-- Wrapper con scroll horizontal en móvil -->
         <div class="overflow-x-auto">
@@ -168,7 +165,7 @@ const formatDate = (dateString: string) => {
           <thead class="bg-dark-800">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
-                Subreddit
+                Topic
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
                 Estado
@@ -186,8 +183,8 @@ const formatDate = (dateString: string) => {
           </thead>
           <tbody class="divide-y divide-dark-600">
             <tr
-              v-for="subreddit in subreddits"
-              :key="subreddit.id"
+              v-for="topic in topics"
+              :key="topic.id"
               class="hover:bg-dark-600 transition-colors"
             >
               <!-- Nombre -->
@@ -204,46 +201,46 @@ const formatDate = (dateString: string) => {
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                     />
                   </svg>
-                  <span class="text-white font-medium">r/{{ subreddit.name }}</span>
+                  <span class="text-white font-medium">{{ topic.name }}</span>
                 </div>
               </td>
 
               <!-- Estado -->
               <td class="px-6 py-4 whitespace-nowrap">
                 <button
-                  @click="handleToggleActive(subreddit.id)"
+                  @click="handleToggleActive(topic.id)"
                   class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors"
                   :class="
-                    subreddit.is_active
+                    topic.is_active
                       ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                       : 'bg-dark-600 text-dark-400 hover:bg-dark-500'
                   "
                 >
                   <span
                     class="w-2 h-2 rounded-full mr-2"
-                    :class="subreddit.is_active ? 'bg-green-400' : 'bg-dark-400'"
+                    :class="topic.is_active ? 'bg-green-400' : 'bg-dark-400'"
                   ></span>
-                  {{ subreddit.is_active ? 'Activo' : 'Inactivo' }}
+                  {{ topic.is_active ? 'Activo' : 'Inactivo' }}
                 </button>
               </td>
 
               <!-- Última sincronización -->
               <td class="px-6 py-4 whitespace-nowrap text-sm text-dark-300">
-                {{ subreddit.last_sync ? formatDate(subreddit.last_sync) : 'Nunca' }}
+                {{ topic.last_sync ? formatDate(topic.last_sync) : 'Nunca' }}
               </td>
 
               <!-- Creado -->
               <td class="px-6 py-4 whitespace-nowrap text-sm text-dark-400">
-                {{ formatDate(subreddit.created_at) }}
+                {{ formatDate(topic.created_at) }}
               </td>
 
               <!-- Acciones -->
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  @click="openEditModal(subreddit.id, subreddit.name, subreddit.is_active)"
+                  @click="openEditModal(topic.id, topic.name, topic.is_active)"
                   class="text-primary-400 hover:text-primary-300 mr-4 transition-colors"
                   title="Editar"
                 >
@@ -263,7 +260,7 @@ const formatDate = (dateString: string) => {
                   </svg>
                 </button>
                 <button
-                  @click="handleDelete(subreddit.id, subreddit.name)"
+                  @click="handleDelete(topic.id, topic.name)"
                   class="text-red-400 hover:text-red-300 transition-colors"
                   title="Eliminar"
                 >
@@ -304,7 +301,7 @@ const formatDate = (dateString: string) => {
             <!-- Header -->
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xl font-semibold text-white">
-                {{ modalMode === 'create' ? 'Añadir Subreddit' : 'Editar Subreddit' }}
+                {{ modalMode === 'create' ? 'Añadir Topic' : 'Editar Topic' }}
               </h3>
               <button
                 @click="closeModal"
@@ -340,21 +337,18 @@ const formatDate = (dateString: string) => {
               <!-- Nombre -->
               <div class="mb-4">
                 <label for="name" class="block text-sm font-medium text-dark-300 mb-2">
-                  Nombre del Subreddit
+                  Nombre del Topic
                 </label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-dark-400">r/</span>
-                  <input
-                    id="name"
-                    v-model="formData.name"
-                    type="text"
-                    required
-                    placeholder="ejemplo: SomebodyMakeThis"
-                    class="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
+                <input
+                  id="name"
+                  v-model="formData.name"
+                  type="text"
+                  required
+                  placeholder="ejemplo: artificial-intelligence"
+                  class="w-full px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
                 <p class="mt-1 text-xs text-dark-400">
-                  Nombre sin el prefijo r/ (se añadirá automáticamente)
+                  Slug del topic de Product Hunt (ej: artificial-intelligence, developer-tools)
                 </p>
               </div>
 
@@ -369,7 +363,7 @@ const formatDate = (dateString: string) => {
                   <span class="ml-2 text-sm text-white">Activar inmediatamente</span>
                 </label>
                 <p class="mt-1 text-xs text-dark-400">
-                  Los subreddits activos se sincronizarán automáticamente
+                  Los topics activos se sincronizarán automáticamente
                 </p>
               </div>
 
