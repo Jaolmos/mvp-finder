@@ -1,30 +1,34 @@
 import api from './api'
 
-export interface Subreddit {
+export interface Topic {
   id: number
   name: string
 }
 
 export interface Post {
   id: number
-  reddit_id: string
-  subreddit: Subreddit
+  external_id: string
+  topic: Topic
   title: string
-  content?: string // Solo en detalle
+  tagline: string
+  content?: string
   author: string
   score: number
+  votes_count: number
+  comments_count: number
   url: string
-  created_at_reddit: string
-  created_at?: string // Solo en detalle
-  updated_at?: string // Solo en detalle
+  website?: string | null
+  created_at_source: string
+  created_at?: string
+  updated_at?: string
   analyzed: boolean
   summary?: string
-  problem?: string // Solo en detalle
-  mvp_idea?: string // Solo en detalle
-  target_audience?: string // Solo en detalle
+  problem?: string
+  mvp_idea?: string
+  target_audience?: string
   potential_score?: number | null
   tags?: string
-  analyzed_at?: string | null // Solo en detalle
+  analyzed_at?: string | null
   is_favorite?: boolean
 }
 
@@ -35,13 +39,12 @@ export interface Category {
 }
 
 export interface PostFilters {
-  subreddit?: string
-  category?: number
+  topic?: number
+  analyzed?: boolean
+  min_score?: number
   search?: string
   is_favorite?: boolean
-  ordering?: string
   page?: number
-  page_size?: number
 }
 
 export interface PostListResponse {

@@ -18,14 +18,18 @@ import postService from '@/services/posts'
 describe('usePostsStore', () => {
   const mockPost: Post = {
     id: 1,
-    reddit_id: 'abc123',
+    external_id: 'abc123',
     title: 'Test Post',
+    tagline: 'Test tagline',
     content: 'Test content',
     author: 'testuser',
     score: 100,
-    url: 'https://reddit.com/test',
-    created_at_reddit: '2024-01-01T00:00:00Z',
-    subreddit: { id: 1, name: 'TestSubreddit' },
+    votes_count: 100,
+    comments_count: 10,
+    url: 'https://producthunt.com/test',
+    website: 'https://example.com',
+    created_at_source: '2024-01-01T00:00:00Z',
+    topic: { id: 1, name: 'artificial-intelligence' },
     analyzed: false,
     is_favorite: false
   }
@@ -147,12 +151,12 @@ describe('usePostsStore', () => {
       vi.mocked(postService.list).mockResolvedValue(mockPostListResponse)
 
       const store = usePostsStore()
-      await store.fetchPosts({ subreddit: 'test', search: 'query' })
+      await store.fetchPosts({ topic: 'test', search: 'query' })
 
       expect(store.filters).toEqual({
         page: 1,
         page_size: 20,
-        subreddit: 'test',
+        topic: 'test',
         search: 'query'
       })
       expect(postService.list).toHaveBeenCalledWith(store.filters)
@@ -279,12 +283,12 @@ describe('usePostsStore', () => {
     it('actualiza los filtros correctamente', () => {
       const store = usePostsStore()
 
-      store.setFilters({ subreddit: 'test', search: 'query' })
+      store.setFilters({ topic: 'test', search: 'query' })
 
       expect(store.filters).toEqual({
         page: 1,
         page_size: 20,
-        subreddit: 'test',
+        topic: 'test',
         search: 'query'
       })
     })
@@ -293,7 +297,7 @@ describe('usePostsStore', () => {
   describe('resetFilters', () => {
     it('resetea los filtros a valores por defecto', () => {
       const store = usePostsStore()
-      store.filters = { page: 5, page_size: 50, subreddit: 'test' }
+      store.filters = { page: 5, page_size: 50, topic: 'test' }
 
       store.resetFilters()
 

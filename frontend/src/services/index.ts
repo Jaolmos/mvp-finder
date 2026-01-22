@@ -2,9 +2,9 @@
 export { default as api } from './api'
 export { default as authService } from './auth'
 export { default as postService } from './posts'
-export { default as subredditService } from './subreddits'
+export { default as topicService } from './topics'
 
 // Exportar tipos
 export type { LoginCredentials, AuthTokens, User } from './auth'
 export type { Post, Category, PostFilters, PostListResponse } from './posts'
-export type { Subreddit, SubredditCreate, SubredditUpdate } from './subreddits'
+export type { Topic, TopicCreate, TopicUpdate } from './topics'
