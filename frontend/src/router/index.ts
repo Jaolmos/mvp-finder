@@ -31,9 +31,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/subreddits',
-      name: 'subreddits',
-      component: () => import('@/views/SubredditsView.vue'),
+      path: '/topics',
+      name: 'topics',
+      component: () => import('@/views/TopicsView.vue'),
       meta: { requiresAuth: true }
     },
     // Redirección para rutas no encontradas
