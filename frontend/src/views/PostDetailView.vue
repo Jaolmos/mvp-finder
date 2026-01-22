@@ -20,7 +20,7 @@ onMounted(async () => {
 // Formatear fecha
 const formattedDate = computed(() => {
   if (!postsStore.currentPost) return ''
-  const date = new Date(postsStore.currentPost.created_at_reddit)
+  const date = new Date(postsStore.currentPost.created_at_source)
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
@@ -42,8 +42,8 @@ const goBack = () => {
   router.push({ name: 'posts' })
 }
 
-// Abrir en Reddit
-const openInReddit = () => {
+// Abrir en Product Hunt
+const openInProductHunt = () => {
   if (postsStore.currentPost) {
     window.open(postsStore.currentPost.url, '_blank')
   }
@@ -133,7 +133,7 @@ const openInReddit = () => {
                       d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                     />
                   </svg>
-                  r/{{ postsStore.currentPost.subreddit.name }}
+                  {{ postsStore.currentPost.topic.name }}
                 </span>
 
                 <span class="flex items-center gap-1 text-secondary-400">
@@ -204,9 +204,9 @@ const openInReddit = () => {
             </button>
           </div>
 
-          <!-- Botón abrir en Reddit -->
+          <!-- Botón abrir en Product Hunt -->
           <button
-            @click="openInReddit"
+            @click="openInProductHunt"
             class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium transition-colors"
           >
             <svg
@@ -223,7 +223,7 @@ const openInReddit = () => {
                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
               />
             </svg>
-            Ver en Reddit
+            Ver en Product Hunt
           </button>
         </div>
 

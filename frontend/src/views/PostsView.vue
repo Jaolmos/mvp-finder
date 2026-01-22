@@ -10,17 +10,17 @@ const postsStore = usePostsStore()
 
 // Filtros locales
 const searchQuery = ref('')
-const selectedSubreddit = ref('')
+const selectedTopic = ref<number | undefined>(undefined)
 const showOnlyFavorites = ref(false)
 const showOnlyAnalyzed = ref(false)
 
-// Lista única de subreddits disponibles
-const availableSubreddits = computed(() => {
-  const subreddits = new Set<string>()
+// Lista única de topics disponibles
+const availableTopics = computed(() => {
+  const topics = new Map<number, string>()
   postsStore.posts.forEach((post) => {
-    subreddits.add(post.subreddit.name)
+    topics.set(post.topic.id, post.topic.name)
   })
-  return Array.from(subreddits).sort()
+  return Array.from(topics.entries()).sort((a, b) => a[1].localeCompare(b[1]))
 })
 
 // Cargar posts al montar el componente
@@ -32,8 +32,9 @@ onMounted(async () => {
 const applyFilters = async () => {
   await postsStore.fetchPosts({
     search: searchQuery.value || undefined,
-    subreddit: selectedSubreddit.value || undefined,
+    topic: selectedTopic.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
+    analyzed: showOnlyAnalyzed.value || undefined,
     page: 1 // Resetear a página 1 cuando se aplican filtros
   })
 }
@@ -41,7 +42,7 @@ const applyFilters = async () => {
 // Limpiar filtros
 const clearFilters = async () => {
   searchQuery.value = ''
-  selectedSubreddit.value = ''
+  selectedTopic.value = undefined
   showOnlyFavorites.value = false
   showOnlyAnalyzed.value = false
   postsStore.resetFilters()
@@ -139,7 +140,7 @@ const pageNumbersMobile = computed(() => {
     <div>
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <h1 class="text-xl md:text-2xl font-bold text-white">Posts de Reddit</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-white">Posts de Product Hunt</h1>
         <div class="text-sm text-dark-400">
           {{ postsStore.pagination.count }} posts encontrados
         </div>
@@ -157,14 +158,14 @@ const pageNumbersMobile = computed(() => {
             @keyup.enter="applyFilters"
           />
 
-          <!-- Subreddit (full width en móvil) -->
+          <!-- Topic (full width en móvil) -->
           <select
-            v-model="selectedSubreddit"
+            v-model="selectedTopic"
             class="w-full md:w-auto px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
-            <option value="">Todos los subreddits</option>
-            <option v-for="subreddit in availableSubreddits" :key="subreddit" :value="subreddit">
-              r/{{ subreddit }}
+            <option :value="undefined">Todos los topics</option>
+            <option v-for="[id, name] in availableTopics" :key="id" :value="id">
+              {{ name }}
             </option>
           </select>
 

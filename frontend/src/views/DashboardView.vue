@@ -17,12 +17,12 @@ onMounted(async () => {
 const stats = computed(() => {
   const totalPosts = postsStore.pagination.count
   const analyzedPosts = postsStore.posts.filter((p) => p.summary).length
-  const subreddits = new Set(postsStore.posts.map((p) => p.subreddit.name)).size
+  const topics = new Set(postsStore.posts.map((p) => p.topic.name)).size
 
   return {
     total: totalPosts,
     analyzed: analyzedPosts,
-    subreddits: subreddits
+    topics: topics
   }
 })
 
@@ -36,8 +36,8 @@ const goToPosts = () => {
   router.push({ name: 'posts' })
 }
 
-const goToSubreddits = () => {
-  router.push({ name: 'subreddits' })
+const goToTopics = () => {
+  router.push({ name: 'topics' })
 }
 
 const handleToggleFavorite = async (id: number) => {
@@ -142,7 +142,7 @@ const handlePostClick = (id: number) => {
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-primary-400 transition-colors">
                 Ver todos los posts
               </h3>
-              <p class="text-dark-300 text-sm">Explorar, filtrar y analizar posts de Reddit</p>
+              <p class="text-dark-300 text-sm">Explorar, filtrar y analizar posts de Product Hunt</p>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -161,15 +161,15 @@ const handlePostClick = (id: number) => {
           </div>
         </button>
 
-        <!-- Ir a Subreddits -->
+        <!-- Ir a Topics -->
         <button
-          @click="goToSubreddits"
+          @click="goToTopics"
           class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-secondary-400 transition-colors">
-                Gestionar subreddits
+                Gestionar topics
               </h3>
               <p class="text-dark-300 text-sm">
                 Añadir, activar o desactivar fuentes de contenido
@@ -227,12 +227,12 @@ const handlePostClick = (id: number) => {
             />
           </svg>
           <h3 class="text-lg font-semibold text-white mb-2">No hay posts</h3>
-          <p class="text-dark-400 mb-4">Configura tus subreddits y sincroniza para comenzar.</p>
+          <p class="text-dark-400 mb-4">Configura tus topics y sincroniza para comenzar.</p>
           <button
-            @click="goToSubreddits"
+            @click="goToTopics"
             class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
           >
-            Ir a Subreddits
+            Ir a Topics
           </button>
         </div>
 
