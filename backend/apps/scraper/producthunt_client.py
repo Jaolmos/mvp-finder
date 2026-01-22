@@ -1,6 +1,7 @@
 """
 Cliente de Product Hunt usando GraphQL API.
 Maneja la conexión y autenticación con la API de Product Hunt.
+Usa OAuth 2.0 Client Credentials flow.
 """
 import os
 import httpx
@@ -12,11 +13,13 @@ class ProductHuntClient:
 
     _instance: Optional["ProductHuntClient"] = None
     API_URL = "https://api.producthunt.com/v2/api/graphql"
+    OAUTH_URL = "https://api.producthunt.com/v2/oauth/token"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, api_secret: str):
         self.api_key = api_key
+        self.api_secret = api_secret
+        self.access_token: Optional[str] = None
         self.headers = {
-            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -30,7 +33,7 @@ class ProductHuntClient:
             ProductHuntClient: Cliente autenticado
 
         Raises:
-            ValueError: Si falta la API key en variables de entorno
+            ValueError: Si faltan credenciales en variables de entorno
         """
         if cls._instance is None:
             cls._instance = cls._create_client()
@@ -40,19 +43,54 @@ class ProductHuntClient:
     def _create_client(cls) -> "ProductHuntClient":
         """Crea nueva instancia del cliente Product Hunt."""
         api_key = os.getenv('PRODUCT_HUNT_API_KEY')
+        api_secret = os.getenv('PRODUCT_HUNT_API_SECRET')
 
-        if not api_key:
+        if not api_key or not api_secret:
             raise ValueError(
-                "Falta API key de Product Hunt. "
-                "Asegúrate de definir PRODUCT_HUNT_API_KEY en .env"
+                "Faltan credenciales de Product Hunt. "
+                "Asegúrate de definir PRODUCT_HUNT_API_KEY y PRODUCT_HUNT_API_SECRET en .env"
             )
 
-        return cls(api_key)
+        return cls(api_key, api_secret)
 
     @classmethod
     def reset_client(cls) -> None:
         """Resetea la instancia singleton (útil para tests)."""
         cls._instance = None
+
+    def _get_access_token(self) -> str:
+        """
+        Obtiene un access token usando OAuth 2.0 Client Credentials.
+
+        Returns:
+            str: Access token válido
+
+        Raises:
+            httpx.HTTPError: Si hay error al obtener el token
+        """
+        if self.access_token:
+            return self.access_token
+
+        payload = {
+            "client_id": self.api_key,
+            "client_secret": self.api_secret,
+            "grant_type": "client_credentials"
+        }
+
+        with httpx.Client() as client:
+            response = client.post(
+                self.OAUTH_URL,
+                json=payload,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            self.access_token = data.get("access_token")
+
+            if not self.access_token:
+                raise ValueError("No se pudo obtener access_token de Product Hunt")
+
+            return self.access_token
 
     def _execute_query(self, query: str, variables: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -68,6 +106,15 @@ class ProductHuntClient:
         Raises:
             httpx.HTTPError: Si hay error en la petición
         """
+        # Obtener access token (se cachea después de la primera llamada)
+        access_token = self._get_access_token()
+
+        # Actualizar headers con el token
+        headers = {
+            **self.headers,
+            "Authorization": f"Bearer {access_token}"
+        }
+
         payload = {"query": query}
         if variables:
             payload["variables"] = variables
@@ -75,7 +122,7 @@ class ProductHuntClient:
         with httpx.Client() as client:
             response = client.post(
                 self.API_URL,
-                headers=self.headers,
+                headers=headers,
                 json=payload,
                 timeout=30.0
             )

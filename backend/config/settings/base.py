@@ -89,6 +89,7 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Product Hunt API
 PRODUCT_HUNT_API_KEY = os.environ.get('PRODUCT_HUNT_API_KEY', '')
+PRODUCT_HUNT_API_SECRET = os.environ.get('PRODUCT_HUNT_API_SECRET', '')
 
 # Django REST Framework
 REST_FRAMEWORK = {
