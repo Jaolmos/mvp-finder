@@ -52,6 +52,12 @@ export interface PostListResponse {
   items: Post[]
 }
 
+export interface PostStats {
+  total_posts: number
+  analyzed_posts: number
+  favorites_count: number
+}
+
 class PostService {
   /**
    * Listar posts con filtros
@@ -84,6 +90,14 @@ class PostService {
    */
   async listCategories(): Promise<Category[]> {
     const response = await api.get<Category[]>('/categories/')
+    return response.data
+  }
+
+  /**
+   * Obtener estadísticas globales de posts
+   */
+  async getStats(): Promise<PostStats> {
+    const response = await api.get<PostStats>('/posts/stats/')
     return response.data
   }
 }

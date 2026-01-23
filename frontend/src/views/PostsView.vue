@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PostCard from '@/components/PostCard.vue'
 import { usePostsStore } from '@/stores/posts'
 
 const router = useRouter()
+const route = useRoute()
 const postsStore = usePostsStore()
 
 // Filtros locales
@@ -25,8 +26,26 @@ const availableTopics = computed(() => {
 
 // Cargar posts al montar el componente
 onMounted(async () => {
-  await postsStore.fetchPosts()
+  await loadWithQueryParams()
 })
+
+// Observar cambios en query params
+watch(() => route.query.analyzed, async (newVal) => {
+  if (newVal === 'true') {
+    showOnlyAnalyzed.value = true
+    await postsStore.fetchPosts({ analyzed: true })
+  }
+}, { immediate: false })
+
+// Cargar posts según query params
+const loadWithQueryParams = async () => {
+  if (route.query.analyzed === 'true') {
+    showOnlyAnalyzed.value = true
+    await postsStore.fetchPosts({ analyzed: true })
+  } else {
+    await postsStore.fetchPosts()
+  }
+}
 
 // Aplicar filtros
 const applyFilters = async () => {

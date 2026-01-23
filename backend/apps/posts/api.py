@@ -85,7 +85,27 @@ class FavoriteToggleSchema(Schema):
     message: str
 
 
+class StatsSchema(Schema):
+    """Schema para estadísticas de posts."""
+    total_posts: int
+    analyzed_posts: int
+    favorites_count: int
+
+
 # Endpoints
+@router.get("/stats/", response=StatsSchema, auth=JWTAuth())
+def get_stats(request):
+    """
+    Obtener estadísticas globales de posts.
+    """
+    from apps.users.models import Favorite
+
+    user = request.auth
+    return {
+        "total_posts": Post.objects.count(),
+        "analyzed_posts": Post.objects.filter(analyzed=True).count(),
+        "favorites_count": Favorite.objects.filter(user=user).count(),
+    }
 @router.get("/", response=List[PostListSchema], auth=JWTAuth())
 @paginate(PageNumberPagination, page_size=20)
 def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):

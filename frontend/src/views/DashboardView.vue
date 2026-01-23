@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PostCard from '@/components/PostCard.vue'
 import { usePostsStore } from '@/stores/posts'
-import { scraperService } from '@/services'
+import { scraperService, postService } from '@/services'
+import type { OllamaStatus } from '@/services/scraper'
+import type { PostStats } from '@/services/posts'
 
 const router = useRouter()
 const postsStore = usePostsStore()
@@ -14,21 +16,49 @@ const isSyncing = ref(false)
 const syncMessage = ref('')
 const syncError = ref('')
 
-// Cargar posts al montar
+// Estado de análisis IA
+const isAnalyzing = ref(false)
+const analyzeMessage = ref('')
+const analyzeError = ref('')
+const ollamaStatus = ref<OllamaStatus | null>(null)
+
+// Estadísticas globales
+const globalStats = ref<PostStats | null>(null)
+
+// Cargar posts, stats y estado de Ollama al montar
 onMounted(async () => {
-  await postsStore.fetchPosts({ page_size: 10 })
+  await Promise.all([
+    postsStore.fetchPosts({ page_size: 10 }),
+    loadOllamaStatus(),
+    loadStats()
+  ])
 })
+
+// Cargar estado de Ollama
+const loadOllamaStatus = async () => {
+  try {
+    ollamaStatus.value = await scraperService.getOllamaStatus()
+  } catch (error) {
+    console.error('Error al cargar estado de Ollama:', error)
+    ollamaStatus.value = null
+  }
+}
+
+// Cargar estadísticas globales
+const loadStats = async () => {
+  try {
+    globalStats.value = await postService.getStats()
+  } catch (error) {
+    console.error('Error al cargar stats:', error)
+  }
+}
 
 // Estadísticas calculadas
 const stats = computed(() => {
-  const totalPosts = postsStore.pagination.count
-  const analyzedPosts = postsStore.posts.filter((p) => p.summary).length
-  const topics = new Set(postsStore.posts.map((p) => p.topic.name)).size
-
   return {
-    total: totalPosts,
-    analyzed: analyzedPosts,
-    topics: topics
+    total: globalStats.value?.total_posts ?? postsStore.pagination.count,
+    analyzed: globalStats.value?.analyzed_posts ?? 0,
+    favorites: globalStats.value?.favorites_count ?? postsStore.favoriteCount
   }
 })
 
@@ -40,6 +70,10 @@ const recentPosts = computed(() => {
 // Navegar a todas las vistas
 const goToPosts = () => {
   router.push({ name: 'posts' })
+}
+
+const goToAnalyzedPosts = () => {
+  router.push({ name: 'posts', query: { analyzed: 'true' } })
 }
 
 const goToTopics = () => {
@@ -85,6 +119,50 @@ const handleSync = async () => {
     isSyncing.value = false
   }
 }
+
+// Analizar posts con Ollama
+const handleAnalyze = async () => {
+  // Verificar estado de Ollama
+  if (!ollamaStatus.value?.ready) {
+    analyzeError.value = 'Ollama no está listo. Verifica que el modelo esté descargado.'
+    setTimeout(() => {
+      analyzeError.value = ''
+    }, 5000)
+    return
+  }
+
+  try {
+    isAnalyzing.value = true
+    analyzeError.value = ''
+    analyzeMessage.value = ''
+
+    const response = await scraperService.analyzePosts({ limit: 10 })
+    analyzeMessage.value = response.message
+
+    // Esperar 5 segundos y recargar posts y stats
+    setTimeout(async () => {
+      await Promise.all([
+        postsStore.fetchPosts({ page_size: 10 }),
+        loadStats()
+      ])
+      analyzeMessage.value = 'Análisis completado'
+
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => {
+        analyzeMessage.value = ''
+      }, 3000)
+    }, 5000)
+  } catch (error: any) {
+    analyzeError.value = error.response?.data?.message || 'Error al analizar posts'
+
+    // Limpiar error después de 5 segundos
+    setTimeout(() => {
+      analyzeError.value = ''
+    }, 5000)
+  } finally {
+    isAnalyzing.value = false
+  }
+}
 </script>
 
 <template>
@@ -123,7 +201,8 @@ const handleSync = async () => {
 
         <!-- Posts Analizados -->
         <div
-          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all shadow-lg"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
+          @click="goToAnalyzedPosts"
         >
           <div class="flex items-center justify-between mb-2">
             <div class="text-dark-300 text-sm font-medium">Posts Analizados</div>
@@ -168,8 +247,8 @@ const handleSync = async () => {
         </div>
       </div>
 
-      <!-- Mensajes de sincronización -->
-      <div v-if="syncMessage || syncError" class="mb-6">
+      <!-- Mensajes de sincronización y análisis -->
+      <div v-if="syncMessage || syncError || analyzeMessage || analyzeError" class="mb-6 space-y-3">
         <div
           v-if="syncMessage"
           class="bg-secondary-500/20 border border-secondary-500 text-secondary-300 px-4 py-3 rounded-lg"
@@ -182,10 +261,53 @@ const handleSync = async () => {
         >
           {{ syncError }}
         </div>
+        <div
+          v-if="analyzeMessage"
+          class="bg-primary-500/20 border border-primary-500 text-primary-300 px-4 py-3 rounded-lg"
+        >
+          {{ analyzeMessage }}
+        </div>
+        <div
+          v-if="analyzeError"
+          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
+        >
+          {{ analyzeError }}
+        </div>
+      </div>
+
+      <!-- Estado de Ollama -->
+      <div v-if="ollamaStatus" class="mb-6">
+        <div
+          class="bg-dark-700 rounded-lg p-3 border flex items-center gap-3"
+          :class="
+            ollamaStatus.ready
+              ? 'border-green-500/50 bg-green-500/10'
+              : 'border-yellow-500/50 bg-yellow-500/10'
+          "
+        >
+          <div
+            class="w-3 h-3 rounded-full"
+            :class="ollamaStatus.ready ? 'bg-green-500' : 'bg-yellow-500'"
+          ></div>
+          <div class="text-sm">
+            <span class="font-medium" :class="ollamaStatus.ready ? 'text-green-300' : 'text-yellow-300'">
+              Ollama:
+            </span>
+            <span class="text-dark-300 ml-2">
+              {{
+                ollamaStatus.ready
+                  ? `Listo (${ollamaStatus.model})`
+                  : ollamaStatus.ollama_available
+                    ? 'Modelo no descargado'
+                    : 'No disponible'
+              }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Ir a Posts -->
         <button
           @click="goToPosts"
@@ -279,6 +401,43 @@ const handleSync = async () => {
             <div
               v-else
               class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"
+            ></div>
+          </div>
+        </button>
+
+        <!-- Analizar Posts con IA -->
+        <button
+          @click="handleAnalyze"
+          :disabled="isAnalyzing || !ollamaStatus?.ready"
+          class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all text-left group shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-primary-400 transition-colors">
+                {{ isAnalyzing ? 'Analizando...' : 'Analizar Posts' }}
+              </h3>
+              <p class="text-dark-300 text-sm">
+                Extraer insights con IA ({{ ollamaStatus?.ready ? '10 posts' : 'no disponible' }})
+              </p>
+            </div>
+            <svg
+              v-if="!isAnalyzing"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-primary-500/50 group-hover:text-primary-500 transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            <div
+              v-else
+              class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"
             ></div>
           </div>
         </button>

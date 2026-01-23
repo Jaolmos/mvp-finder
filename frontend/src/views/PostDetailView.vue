@@ -239,31 +239,79 @@ const openInProductHunt = () => {
 
         <!-- AI Analysis card (si existe) -->
         <div
-          v-if="postsStore.currentPost.summary"
+          v-if="postsStore.currentPost.analyzed"
           class="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-lg p-4 sm:p-6 border border-primary-500/30"
         >
-          <div class="flex items-center gap-2 mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 sm:h-6 sm:w-6 text-primary-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 sm:h-6 sm:w-6 text-primary-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              <h2 class="text-lg sm:text-xl font-semibold text-white">Análisis IA</h2>
+            </div>
+            <!-- Potential Score Badge -->
+            <div
+              v-if="postsStore.currentPost.potential_score"
+              class="flex items-center gap-1 px-3 py-1 rounded-full"
+              :class="{
+                'bg-green-500/20 text-green-300': postsStore.currentPost.potential_score >= 7,
+                'bg-yellow-500/20 text-yellow-300': postsStore.currentPost.potential_score >= 4 && postsStore.currentPost.potential_score < 7,
+                'bg-red-500/20 text-red-300': postsStore.currentPost.potential_score < 4
+              }"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
-            <h2 class="text-lg sm:text-xl font-semibold text-white">Análisis IA</h2>
+              <span class="text-sm font-medium">Potencial:</span>
+              <span class="text-lg font-bold">{{ postsStore.currentPost.potential_score }}/10</span>
+            </div>
           </div>
 
-          <div class="space-y-4">
-            <div>
-              <h3 class="text-sm font-medium text-primary-300 mb-1">Resumen</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Summary -->
+            <div v-if="postsStore.currentPost.summary" class="bg-dark-800/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-primary-300 mb-2">Resumen</h3>
               <p class="text-white">{{ postsStore.currentPost.summary }}</p>
+            </div>
+
+            <!-- Problem -->
+            <div v-if="postsStore.currentPost.problem" class="bg-dark-800/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-red-300 mb-2">Problema que resuelve</h3>
+              <p class="text-white">{{ postsStore.currentPost.problem }}</p>
+            </div>
+
+            <!-- MVP Idea -->
+            <div v-if="postsStore.currentPost.mvp_idea" class="bg-dark-800/50 rounded-lg p-4 md:col-span-2">
+              <h3 class="text-sm font-medium text-accent mb-2">Idea de MVP</h3>
+              <p class="text-white">{{ postsStore.currentPost.mvp_idea }}</p>
+            </div>
+
+            <!-- Target Audience -->
+            <div v-if="postsStore.currentPost.target_audience" class="bg-dark-800/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-secondary-300 mb-2">Público objetivo</h3>
+              <p class="text-white">{{ postsStore.currentPost.target_audience }}</p>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="postsStore.currentPost.tags" class="bg-dark-800/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-dark-300 mb-2">Tags</h3>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="tag in postsStore.currentPost.tags.split(',')"
+                  :key="tag"
+                  class="px-2 py-1 bg-dark-700 text-dark-200 rounded text-sm"
+                >
+                  {{ tag.trim() }}
+                </span>
+              </div>
             </div>
           </div>
         </div>

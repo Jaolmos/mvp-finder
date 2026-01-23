@@ -143,7 +143,7 @@ class OllamaClient:
                         "stream": False,
                         "options": {
                             "temperature": 0.3,
-                            "num_predict": 500,
+                            "num_predict": 2000,
                         }
                     }
                 )
@@ -179,22 +179,24 @@ class OllamaClient:
 class PostAnalyzer:
     """Analizador de posts usando Ollama."""
 
-    ANALYSIS_PROMPT = """Analyze this Product Hunt product and extract structured information.
+    ANALYSIS_PROMPT = """Analiza este producto de Product Hunt. Responde EN ESPAÑOL con JSON válido.
 
-Product: {title}
-Tagline: {tagline}
-Description: {content}
-Votes: {votes_count} | Comments: {comments_count}
+PRODUCTO: {title}
+TAGLINE: {tagline}
+DESCRIPCIÓN: {content}
 
-Respond ONLY with a valid JSON object (no markdown, no explanation) with these fields:
-- "summary": One-line summary of what the product does (max 100 chars)
-- "problem": The problem this product solves (max 200 chars)
-- "mvp_idea": A related MVP idea you could build (max 200 chars)
-- "target_audience": Who would use this (max 100 chars)
-- "potential_score": Business potential 1-10 (integer)
-- "tags": Array of 3-5 relevant tags (lowercase, no spaces)
+INSTRUCCIONES:
+- summary: 2-3 frases explicando qué hace el producto
+- problem: 3-4 frases sobre el problema que resuelve y por qué importa
+- mvp_idea: 3-4 frases con una idea de MVP que podrías construir inspirándote en este producto
+- target_audience: 2-3 frases describiendo el público objetivo (profesión, contexto, necesidades)
+- potential_score: número del 1 al 10 según potencial de mercado
+- tags: 4-5 palabras clave relevantes en minúsculas
 
-JSON response:"""
+Responde SOLO con JSON válido:
+{{"summary":"...","problem":"...","mvp_idea":"...","target_audience":"...","potential_score":7,"tags":["tag1","tag2","tag3","tag4"]}}
+
+JSON:"""
 
     def __init__(self, client: Optional[OllamaClient] = None):
         self.client = client or OllamaClient.get_client()
