@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: reddit_mvp_postgres
+    container_name: mvp_finder_postgres
     env_file:
       - .env
     volumes:
@@ -16,7 +16,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: reddit_mvp_redis
+    container_name: mvp_finder_redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
-    container_name: reddit_mvp_backend
+    container_name: mvp_finder_backend
     env_file:
       - .env
     ports:
@@ -48,7 +48,7 @@ services:
     build:
       context: .
       dockerfile: docker/celery/Dockerfile
-    container_name: reddit_mvp_celery_worker
+    container_name: mvp_finder_celery
     env_file:
       - .env
     depends_on:
@@ -64,7 +64,7 @@ services:
     build:
       context: ./frontend
       dockerfile: ../docker/frontend/Dockerfile
-    container_name: reddit_mvp_frontend
+    container_name: mvp_finder_frontend
     ports:
       - "5173:5173"
     volumes:
