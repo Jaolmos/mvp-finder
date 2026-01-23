@@ -1,12 +1,13 @@
 """
-API endpoints para scraper de Product Hunt.
+API endpoints para scraper de Product Hunt y análisis IA.
 """
 from typing import List, Optional
 from ninja import Router, Schema
 from django.http import HttpRequest
 
 from config.auth import JWTAuth
-from .tasks import sync_posts, test_connection
+from .tasks import sync_posts, test_connection, analyze_posts, check_ollama, pull_ollama_model
+from .ai_analyzer import OllamaClient
 
 router = Router(tags=["Scraper"], auth=JWTAuth())
 
@@ -32,6 +33,21 @@ class TestConnectionResponseSchema(Schema):
     """Schema para respuesta de test de conexión."""
     task_id: str
     message: str
+
+
+class AnalyzeRequestSchema(Schema):
+    """Schema para request de análisis IA."""
+    post_ids: Optional[List[int]] = None
+    limit: int = 10
+
+
+class OllamaStatusSchema(Schema):
+    """Schema para estado de Ollama."""
+    host: str
+    model: str
+    ollama_available: bool
+    model_available: bool
+    ready: bool
 
 
 # ============================================
@@ -86,4 +102,76 @@ def test_producthunt_connection(request: HttpRequest):
     return {
         "task_id": task.id,
         "message": "Probando conexión con Product Hunt..."
+    }
+
+
+# ============================================
+# ENDPOINTS OLLAMA / ANÁLISIS IA
+# ============================================
+
+@router.post(
+    "/analyze/",
+    response={200: TaskResponseSchema},
+    summary="Analizar posts con IA"
+)
+def analyze_posts_endpoint(request: HttpRequest, payload: AnalyzeRequestSchema = None):
+    """
+    Inicia análisis de posts con Ollama en background.
+
+    - Si `post_ids` está vacío o None: analiza posts no analizados
+    - Si `post_ids` tiene valores: analiza solo esos posts
+    - `limit`: número máximo de posts a analizar (default: 10)
+
+    Requiere que Ollama esté disponible y el modelo descargado.
+    """
+    if payload is None:
+        payload = AnalyzeRequestSchema()
+
+    task = analyze_posts.delay(
+        post_ids=payload.post_ids,
+        limit=payload.limit,
+    )
+
+    return {
+        "task_id": task.id,
+        "message": "Análisis iniciado en background",
+        "status": "processing"
+    }
+
+
+@router.get(
+    "/ollama-status/",
+    response={200: OllamaStatusSchema},
+    summary="Verificar estado de Ollama"
+)
+def get_ollama_status(request: HttpRequest):
+    """
+    Obtiene el estado de Ollama y el modelo configurado.
+
+    Retorna:
+    - `ollama_available`: Si Ollama está corriendo
+    - `model_available`: Si el modelo está descargado
+    - `ready`: Si está listo para analizar (ambos true)
+    """
+    client = OllamaClient.get_client()
+    return client.get_status()
+
+
+@router.post(
+    "/pull-model/",
+    response={200: TaskResponseSchema},
+    summary="Descargar modelo de Ollama"
+)
+def pull_model_endpoint(request: HttpRequest):
+    """
+    Inicia la descarga del modelo de Ollama en background.
+
+    El modelo configurado es: OLLAMA_MODEL en .env (default: llama3.2:1b)
+    """
+    task = pull_ollama_model.delay()
+
+    return {
+        "task_id": task.id,
+        "message": "Descarga de modelo iniciada en background",
+        "status": "processing"
     }
