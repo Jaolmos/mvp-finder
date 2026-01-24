@@ -190,7 +190,7 @@ INSTRUCCIONES (escribe texto completo, NO uses corchetes ni placeholders):
 - problem: 3-4 frases sobre el problema que resuelve y por qué importa
 - mvp_idea: 3-4 frases con una idea concreta de MVP inspirada en este producto
 - target_audience: 3-4 frases describiendo el público objetivo (profesión, contexto, necesidades)
-- potential_score: número del 1 al 10 según potencial de mercado
+- potential_score: número del 1 al 10 basado en: tamaño de mercado (nicho=bajo, masivo=alto), urgencia del problema, y facilidad de monetización
 - tags: 4-5 palabras clave en minúsculas (ej: "productividad", "ia", "saas")
 
 Formato JSON:
