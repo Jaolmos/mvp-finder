@@ -26,7 +26,7 @@ async function handleSubmit() {
 
 <template>
   <AuthLayout>
-    <form @submit.prevent="handleSubmit" class="bg-slate-800 rounded-lg p-6 sm:p-8 shadow-xl border border-slate-700">
+    <form @submit.prevent="handleSubmit" class="bg-dark-800 rounded-lg p-6 sm:p-8 shadow-xl border border-dark-700">
       <h2 class="text-xl sm:text-2xl font-semibold text-white mb-6 text-center">Iniciar sesión</h2>
 
       <!-- Error message -->
@@ -39,7 +39,7 @@ async function handleSubmit() {
 
       <!-- Username -->
       <div class="mb-4">
-        <label for="username" class="block text-sm font-medium text-slate-300 mb-2">
+        <label for="username" class="block text-sm font-medium text-dark-300 mb-2">
           Usuario
         </label>
         <input
@@ -48,14 +48,14 @@ async function handleSubmit() {
           type="text"
           required
           autocomplete="username"
-          class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          class="w-full px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           placeholder="Tu nombre de usuario"
         />
       </div>
 
       <!-- Password -->
       <div class="mb-6">
-        <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
+        <label for="password" class="block text-sm font-medium text-dark-300 mb-2">
           Contraseña
         </label>
         <input
@@ -64,7 +64,7 @@ async function handleSubmit() {
           type="password"
           required
           autocomplete="current-password"
-          class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          class="w-full px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           placeholder="Tu contraseña"
         />
       </div>
@@ -73,7 +73,7 @@ async function handleSubmit() {
       <button
         type="submit"
         :disabled="authStore.loading"
-        class="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+        class="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-600/50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-800"
       >
         <span v-if="authStore.loading" class="flex items-center justify-center">
           <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

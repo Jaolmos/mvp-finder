@@ -31,7 +31,7 @@ router.afterEach(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-900">
+  <div class="min-h-screen bg-dark-900">
     <!-- Backdrop móvil (solo visible cuando sidebar está abierto) -->
     <div
       v-if="isSidebarOpen"
@@ -41,20 +41,20 @@ router.afterEach(() => {
 
     <!-- Sidebar -->
     <aside
-      class="fixed inset-y-0 left-0 w-64 bg-slate-800 border-r border-slate-700 z-40 transition-transform duration-300"
+      class="fixed inset-y-0 left-0 w-64 bg-dark-800 border-r border-dark-700 z-40 transition-transform duration-300"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     >
       <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-slate-700">
-        <h1 class="text-xl font-bold text-purple-400">MVP Finder</h1>
+      <div class="h-16 flex items-center px-6 border-b border-dark-700">
+        <h1 class="text-xl font-bold text-primary-400">MVP Finder</h1>
       </div>
 
       <!-- Navigation -->
       <nav class="p-4 space-y-2">
         <RouterLink
           to="/"
-          class="flex items-center px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-          active-class="bg-purple-600 text-white hover:bg-purple-600"
+          class="flex items-center px-4 py-2 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
+          active-class="bg-primary-600 text-white hover:bg-primary-600"
         >
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -64,8 +64,8 @@ router.afterEach(() => {
 
         <RouterLink
           to="/posts"
-          class="flex items-center px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-          active-class="bg-purple-600 text-white hover:bg-purple-600"
+          class="flex items-center px-4 py-2 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
+          active-class="bg-primary-600 text-white hover:bg-primary-600"
         >
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
@@ -75,8 +75,8 @@ router.afterEach(() => {
 
         <RouterLink
           to="/topics"
-          class="flex items-center px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-          active-class="bg-purple-600 text-white hover:bg-purple-600"
+          class="flex items-center px-4 py-2 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
+          active-class="bg-primary-600 text-white hover:bg-primary-600"
         >
           <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
@@ -89,11 +89,11 @@ router.afterEach(() => {
     <!-- Main content -->
     <div class="md:pl-64">
       <!-- Header -->
-      <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 md:px-6">
+      <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-4 md:px-6">
         <!-- Botón hamburguesa (solo móvil) -->
         <button
           @click="toggleSidebar"
-          class="p-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors md:hidden"
+          class="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors md:hidden"
           aria-label="Toggle menu"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,10 +103,10 @@ router.afterEach(() => {
 
         <!-- User info y logout -->
         <div class="flex items-center space-x-4 ml-auto">
-          <span class="text-slate-300 text-sm md:text-base">{{ authStore.user?.username }}</span>
+          <span class="text-dark-300 text-sm md:text-base">{{ authStore.user?.username }}</span>
           <button
             @click="handleLogout"
-            class="px-3 py-2 md:px-4 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            class="px-3 py-2 md:px-4 text-sm text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
           >
             Cerrar sesión
           </button>
