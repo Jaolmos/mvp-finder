@@ -32,6 +32,34 @@ router.afterEach(() => {
 
 <template>
   <div class="min-h-screen bg-dark-900">
+    <!-- Header fijo arriba (full width) -->
+    <header class="fixed top-0 left-0 right-0 h-16 bg-dark-800 border-b border-dark-700 z-50 flex items-center justify-between px-4 md:px-6">
+      <!-- Logo (visible en desktop) + Botón hamburguesa (móvil) -->
+      <div class="flex items-center">
+        <button
+          @click="toggleSidebar"
+          class="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors md:hidden mr-2"
+          aria-label="Toggle menu"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h1 class="text-xl font-bold text-primary-400">MVP Finder</h1>
+      </div>
+
+      <!-- User info y logout -->
+      <div class="flex items-center space-x-4">
+        <span class="text-dark-300 text-sm md:text-base">{{ authStore.user?.username }}</span>
+        <button
+          @click="handleLogout"
+          class="px-3 py-2 md:px-4 text-sm text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </header>
+
     <!-- Backdrop móvil (solo visible cuando sidebar está abierto) -->
     <div
       v-if="isSidebarOpen"
@@ -39,16 +67,11 @@ router.afterEach(() => {
       class="fixed inset-0 bg-black/50 z-30 md:hidden"
     ></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (debajo del header) -->
     <aside
-      class="fixed inset-y-0 left-0 w-64 bg-dark-800 border-r border-dark-700 z-40 transition-transform duration-300"
+      class="fixed top-16 bottom-0 left-0 w-64 bg-dark-800 border-r border-dark-700 z-40 transition-transform duration-300"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     >
-      <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-dark-700">
-        <h1 class="text-xl font-bold text-primary-400">MVP Finder</h1>
-      </div>
-
       <!-- Navigation -->
       <nav class="p-4 space-y-2">
         <RouterLink
@@ -86,33 +109,8 @@ router.afterEach(() => {
       </nav>
     </aside>
 
-    <!-- Main content -->
-    <div class="md:pl-64">
-      <!-- Header -->
-      <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-4 md:px-6">
-        <!-- Botón hamburguesa (solo móvil) -->
-        <button
-          @click="toggleSidebar"
-          class="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors md:hidden"
-          aria-label="Toggle menu"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-
-        <!-- User info y logout -->
-        <div class="flex items-center space-x-4 ml-auto">
-          <span class="text-dark-300 text-sm md:text-base">{{ authStore.user?.username }}</span>
-          <button
-            @click="handleLogout"
-            class="px-3 py-2 md:px-4 text-sm text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </header>
-
+    <!-- Main content (con margen para header y sidebar) -->
+    <div class="pt-16 md:pl-64">
       <!-- Page content -->
       <main class="p-4 md:p-6">
         <slot />
