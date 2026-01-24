@@ -28,8 +28,76 @@ const analyzeTarget = ref(10)
 const initialAnalyzedCount = ref(0)
 let pollingInterval: ReturnType<typeof setInterval> | null = null
 
+// Claves para persistir estado del análisis
+const ANALYSIS_STATE_KEY = 'mvp_finder_analysis_state'
+
+interface AnalysisState {
+  inProgress: boolean
+  initialCount: number
+  target: number
+  startedAt: number
+}
+
 // Estadísticas globales
 const globalStats = ref<PostStats | null>(null)
+
+// Guardar estado del análisis en localStorage
+const saveAnalysisState = (state: AnalysisState | null) => {
+  if (state) {
+    localStorage.setItem(ANALYSIS_STATE_KEY, JSON.stringify(state))
+  } else {
+    localStorage.removeItem(ANALYSIS_STATE_KEY)
+  }
+}
+
+// Cargar estado del análisis desde localStorage
+const loadAnalysisState = (): AnalysisState | null => {
+  const saved = localStorage.getItem(ANALYSIS_STATE_KEY)
+  if (!saved) return null
+
+  try {
+    const state = JSON.parse(saved) as AnalysisState
+    // Expirar después de 10 minutos
+    if (Date.now() - state.startedAt > 10 * 60 * 1000) {
+      localStorage.removeItem(ANALYSIS_STATE_KEY)
+      return null
+    }
+    return state
+  } catch {
+    localStorage.removeItem(ANALYSIS_STATE_KEY)
+    return null
+  }
+}
+
+// Reanudar análisis si estaba en progreso
+const resumeAnalysisIfNeeded = async () => {
+  const state = loadAnalysisState()
+  if (!state || !state.inProgress) return
+
+  // Restaurar estado
+  initialAnalyzedCount.value = state.initialCount
+  analyzeTarget.value = state.target
+  isAnalyzing.value = true
+
+  // Calcular progreso actual
+  const currentAnalyzed = globalStats.value?.analyzed_posts ?? 0
+  analyzeProgress.value = currentAnalyzed - initialAnalyzedCount.value
+
+  // Si ya terminó, limpiar
+  if (analyzeProgress.value >= analyzeTarget.value) {
+    analyzeMessage.value = `Análisis completado (${analyzeProgress.value} posts analizados)`
+    isAnalyzing.value = false
+    saveAnalysisState(null)
+    setTimeout(() => {
+      analyzeMessage.value = ''
+    }, 5000)
+    return
+  }
+
+  // Continuar polling
+  analyzeMessage.value = `Analizando... (${analyzeProgress.value}/${analyzeTarget.value} completados)`
+  startAnalysisPolling()
+}
 
 // Cargar posts, stats y estado de Ollama al montar
 onMounted(async () => {
@@ -38,6 +106,9 @@ onMounted(async () => {
     loadOllamaStatus(),
     loadStats()
   ])
+
+  // Verificar si hay análisis en progreso
+  await resumeAnalysisIfNeeded()
 })
 
 // Cargar estado de Ollama
@@ -162,6 +233,9 @@ const stopAnalysisPolling = async () => {
     pollingInterval = null
   }
 
+  // Limpiar estado persistido
+  saveAnalysisState(null)
+
   // Recargar datos finales
   await Promise.all([
     postsStore.fetchPosts({ page_size: 10 }),
@@ -199,6 +273,14 @@ const handleAnalyze = async () => {
     initialAnalyzedCount.value = globalStats.value?.analyzed_posts ?? 0
     analyzeMessage.value = 'Iniciando análisis... (esto tarda ~3-4 minutos)'
 
+    // Persistir estado para poder retomar si el usuario navega
+    saveAnalysisState({
+      inProgress: true,
+      initialCount: initialAnalyzedCount.value,
+      target: analyzeTarget.value,
+      startedAt: Date.now()
+    })
+
     const response = await scraperService.analyzePosts({ limit: analyzeTarget.value })
 
     // Iniciar polling para seguir el progreso real
@@ -206,6 +288,7 @@ const handleAnalyze = async () => {
     startAnalysisPolling()
 
   } catch (error: any) {
+    saveAnalysisState(null)
     isAnalyzing.value = false
     analyzeError.value = error.response?.data?.message || 'Error al analizar posts'
 
