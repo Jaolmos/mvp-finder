@@ -42,6 +42,7 @@ export interface PostFilters {
   topic?: number
   analyzed?: boolean
   min_score?: number
+  min_potential?: number
   search?: string
   is_favorite?: boolean
   page?: number

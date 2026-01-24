@@ -101,6 +101,7 @@ def list_posts(
     topic: Optional[int] = None,
     analyzed: Optional[bool] = None,
     min_score: Optional[int] = None,
+    min_potential: Optional[int] = None,
     search: Optional[str] = None,
     is_favorite: Optional[bool] = None
 ):
@@ -125,6 +126,9 @@ def list_posts(
 
     if min_score:
         posts = posts.filter(score__gte=min_score)
+
+    if min_potential:
+        posts = posts.filter(potential_score__gte=min_potential)
 
     if search:
         from django.db.models import Q

@@ -12,6 +12,7 @@ const postsStore = usePostsStore()
 // Filtros locales
 const searchQuery = ref('')
 const selectedTopic = ref<number | undefined>(undefined)
+const minPotential = ref<number | undefined>(undefined)
 const showOnlyFavorites = ref(false)
 const showOnlyAnalyzed = ref(false)
 
@@ -42,13 +43,20 @@ onMounted(async () => {
   if (route.query.favorites === 'true') {
     showOnlyFavorites.value = true
   }
+  if (route.query.min_potential) {
+    const potential = parseInt(route.query.min_potential as string)
+    if (!isNaN(potential)) {
+      minPotential.value = potential
+    }
+  }
 
   // Aplicar filtros desde query params
   await postsStore.fetchPosts({
     analyzed: showOnlyAnalyzed.value || undefined,
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
-    is_favorite: showOnlyFavorites.value || undefined
+    is_favorite: showOnlyFavorites.value || undefined,
+    min_potential: minPotential.value || undefined
   })
 })
 
@@ -62,12 +70,16 @@ watch(() => route.query, async (newQuery) => {
   const topicId = newQuery.topic ? parseInt(newQuery.topic as string) : undefined
   selectedTopic.value = topicId && !isNaN(topicId) ? topicId : undefined
 
+  const potential = newQuery.min_potential ? parseInt(newQuery.min_potential as string) : undefined
+  minPotential.value = potential && !isNaN(potential) ? potential : undefined
+
   // Recargar posts con los nuevos filtros
   await postsStore.fetchPosts({
     analyzed: showOnlyAnalyzed.value || undefined,
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
-    is_favorite: showOnlyFavorites.value || undefined
+    is_favorite: showOnlyFavorites.value || undefined,
+    min_potential: minPotential.value || undefined
   })
 }, { deep: true })
 
@@ -76,6 +88,7 @@ const applyFilters = async () => {
   await postsStore.fetchPosts({
     search: searchQuery.value || undefined,
     topic: selectedTopic.value || undefined,
+    min_potential: minPotential.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
     analyzed: showOnlyAnalyzed.value || undefined,
     page: 1 // Resetear a página 1 cuando se aplican filtros
@@ -86,6 +99,7 @@ const applyFilters = async () => {
 const clearFilters = async () => {
   searchQuery.value = ''
   selectedTopic.value = undefined
+  minPotential.value = undefined
   showOnlyFavorites.value = false
   showOnlyAnalyzed.value = false
   postsStore.resetFilters()
@@ -210,6 +224,17 @@ const pageNumbersMobile = computed(() => {
             <option v-for="[id, name] in availableTopics" :key="id" :value="id">
               {{ name }}
             </option>
+          </select>
+
+          <!-- Potencial mínimo -->
+          <select
+            v-model="minPotential"
+            class="w-full md:w-auto px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option :value="undefined">Todo potencial</option>
+            <option :value="5">Potencial ≥ 5</option>
+            <option :value="7">Potencial ≥ 7</option>
+            <option :value="8">Potencial ≥ 8</option>
           </select>
 
           <!-- Checkboxes (en fila en móvil) -->
