@@ -29,7 +29,7 @@ class OllamaClient:
 
     _instance: Optional["OllamaClient"] = None
     DEFAULT_HOST = "http://ollama:11434"
-    DEFAULT_MODEL = "llama3.2:1b"
+    DEFAULT_MODEL = "qwen2.5:3b"
 
     def __init__(self, host: str, model: str):
         self.host = host.rstrip('/')
