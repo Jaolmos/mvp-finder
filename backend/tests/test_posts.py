@@ -3,8 +3,7 @@ Tests para los endpoints de posts.
 """
 
 import pytest
-from apps.posts.models import Post
-from apps.users.models import Favorite
+from apps.posts.models import Post, Favorite
 
 
 @pytest.mark.django_db
