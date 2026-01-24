@@ -98,9 +98,12 @@ const handleSync = async () => {
     const response = await scraperService.syncPosts()
     syncMessage.value = response.message
 
-    // Esperar 3 segundos y recargar posts
+    // Esperar 3 segundos y recargar posts y stats
     setTimeout(async () => {
-      await postsStore.fetchPosts({ page_size: 10 })
+      await Promise.all([
+        postsStore.fetchPosts({ page_size: 10 }),
+        loadStats()
+      ])
       syncMessage.value = 'Sincronización completada'
 
       // Limpiar mensaje después de 3 segundos
