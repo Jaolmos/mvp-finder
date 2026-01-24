@@ -8,8 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from config.auth import JWTAuth
-from .models import Post
-from apps.users.models import Favorite
+from .models import Post, Favorite
 
 router = Router(tags=["Posts"])
 
@@ -98,8 +97,6 @@ def get_stats(request):
     """
     Obtener estadísticas globales de posts.
     """
-    from apps.users.models import Favorite
-
     user = request.auth
     return {
         "total_posts": Post.objects.count(),
