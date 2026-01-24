@@ -45,6 +45,7 @@ export interface PostFilters {
   search?: string
   is_favorite?: boolean
   page?: number
+  page_size?: number
 }
 
 export interface PostListResponse {

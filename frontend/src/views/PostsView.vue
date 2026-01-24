@@ -26,26 +26,50 @@ const availableTopics = computed(() => {
 
 // Cargar posts al montar el componente
 onMounted(async () => {
-  await loadWithQueryParams()
-})
-
-// Observar cambios en query params
-watch(() => route.query.analyzed, async (newVal) => {
-  if (newVal === 'true') {
-    showOnlyAnalyzed.value = true
-    await postsStore.fetchPosts({ analyzed: true })
-  }
-}, { immediate: false })
-
-// Cargar posts según query params
-const loadWithQueryParams = async () => {
+  // Leer query params al montar
   if (route.query.analyzed === 'true') {
     showOnlyAnalyzed.value = true
-    await postsStore.fetchPosts({ analyzed: true })
-  } else {
-    await postsStore.fetchPosts()
   }
-}
+  if (route.query.topic) {
+    const topicId = parseInt(route.query.topic as string)
+    if (!isNaN(topicId)) {
+      selectedTopic.value = topicId
+    }
+  }
+  if (route.query.search) {
+    searchQuery.value = route.query.search as string
+  }
+  if (route.query.favorites === 'true') {
+    showOnlyFavorites.value = true
+  }
+
+  // Aplicar filtros desde query params
+  await postsStore.fetchPosts({
+    analyzed: showOnlyAnalyzed.value || undefined,
+    topic: selectedTopic.value || undefined,
+    search: searchQuery.value || undefined,
+    is_favorite: showOnlyFavorites.value || undefined
+  })
+})
+
+// Observar cambios en query params (solo para navegación futura)
+watch(() => route.query, async (newQuery) => {
+  // Sincronizar filtros locales con query params
+  showOnlyAnalyzed.value = newQuery.analyzed === 'true'
+  showOnlyFavorites.value = newQuery.favorites === 'true'
+  searchQuery.value = (newQuery.search as string) || ''
+
+  const topicId = newQuery.topic ? parseInt(newQuery.topic as string) : undefined
+  selectedTopic.value = topicId && !isNaN(topicId) ? topicId : undefined
+
+  // Recargar posts con los nuevos filtros
+  await postsStore.fetchPosts({
+    analyzed: showOnlyAnalyzed.value || undefined,
+    topic: selectedTopic.value || undefined,
+    search: searchQuery.value || undefined,
+    is_favorite: showOnlyFavorites.value || undefined
+  })
+}, { deep: true })
 
 // Aplicar filtros
 const applyFilters = async () => {
