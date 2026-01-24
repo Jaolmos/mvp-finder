@@ -2,7 +2,7 @@
 API de posts con Django Ninja.
 """
 
-from ninja import Router, Schema, FilterSchema, Field
+from ninja import Router, Schema, Field
 from ninja.pagination import paginate, PageNumberPagination
 from typing import List, Optional
 from datetime import datetime
@@ -69,15 +69,6 @@ class PostDetailSchema(Schema):
     updated_at: datetime
 
 
-class PostFilterSchema(FilterSchema):
-    """Schema para filtros de posts."""
-    topic: Optional[int] = None
-    analyzed: Optional[bool] = None
-    min_score: Optional[int] = None
-    search: Optional[str] = None
-    is_favorite: Optional[bool] = None
-
-
 class FavoriteToggleSchema(Schema):
     """Schema para respuesta de toggle favorite."""
     is_favorite: bool
@@ -105,7 +96,14 @@ def get_stats(request):
     }
 @router.get("/", response=List[PostListSchema], auth=JWTAuth())
 @paginate(PageNumberPagination, page_size=20)
-def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
+def list_posts(
+    request,
+    topic: Optional[int] = None,
+    analyzed: Optional[bool] = None,
+    min_score: Optional[int] = None,
+    search: Optional[str] = None,
+    is_favorite: Optional[bool] = None
+):
     """
     Listar posts con filtros y paginación.
 
@@ -119,20 +117,20 @@ def list_posts(request, filters: PostFilterSchema = PostFilterSchema()):
     ).all()
 
     # Aplicar filtros
-    if filters.topic:
-        posts = posts.filter(topic_id=filters.topic)
+    if topic:
+        posts = posts.filter(topic_id=topic)
 
-    if filters.analyzed is not None:
-        posts = posts.filter(analyzed=filters.analyzed)
+    if analyzed is not None:
+        posts = posts.filter(analyzed=analyzed)
 
-    if filters.min_score:
-        posts = posts.filter(score__gte=filters.min_score)
+    if min_score:
+        posts = posts.filter(score__gte=min_score)
 
-    if filters.search:
+    if search:
         from django.db.models import Q
-        posts = posts.filter(Q(title__icontains=filters.search) | Q(content__icontains=filters.search))
+        posts = posts.filter(Q(title__icontains=search) | Q(content__icontains=search))
 
-    if filters.is_favorite:
+    if is_favorite:
         posts = posts.filter(is_favorite=True)
 
     return posts
