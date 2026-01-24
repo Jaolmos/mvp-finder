@@ -178,6 +178,28 @@ def get_post(request, post_id: int):
     return post
 
 
+class DeleteResponseSchema(Schema):
+    """Schema para respuesta de eliminación."""
+    success: bool
+    message: str
+
+
+@router.delete("/{post_id}/", response=DeleteResponseSchema, auth=JWTAuth())
+def delete_post(request, post_id: int):
+    """
+    Eliminar un post.
+
+    Requiere autenticación JWT.
+    """
+    post = get_object_or_404(Post, id=post_id)
+    title = post.title
+    post.delete()
+    return {
+        "success": True,
+        "message": f"Post '{title}' eliminado correctamente"
+    }
+
+
 @router.post("/{post_id}/favorite/", response=FavoriteToggleSchema, auth=JWTAuth())
 def toggle_favorite(request, post_id: int):
     """

@@ -88,6 +88,14 @@ class PostService {
   }
 
   /**
+   * Eliminar un post
+   */
+  async delete(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete<{ success: boolean; message: string }>(`/posts/${id}/`)
+    return response.data
+  }
+
+  /**
    * Listar categorías
    */
   async listCategories(): Promise<Category[]> {

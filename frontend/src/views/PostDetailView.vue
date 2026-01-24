@@ -120,6 +120,25 @@ const openInProductHunt = () => {
     window.open(postsStore.currentPost.url, '_blank')
   }
 }
+
+// Estado de eliminación
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
+
+// Eliminar post
+const handleDeletePost = async () => {
+  if (!postsStore.currentPost || isDeleting.value) return
+
+  isDeleting.value = true
+  const success = await postsStore.deletePost(postsStore.currentPost.id)
+
+  if (success) {
+    router.push({ name: 'posts' })
+  } else {
+    isDeleting.value = false
+    showDeleteConfirm.value = false
+  }
+}
 </script>
 
 <template>
@@ -276,27 +295,50 @@ const openInProductHunt = () => {
             </button>
           </div>
 
-          <!-- Botón abrir en Product Hunt -->
-          <button
-            @click="openInProductHunt"
-            class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <!-- Botones de acción -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              @click="openInProductHunt"
+              class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium transition-colors"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-            Ver en Product Hunt
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              Ver en Product Hunt
+            </button>
+
+            <button
+              @click="showDeleteConfirm = true"
+              class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 rounded-lg font-medium transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              Eliminar
+            </button>
+          </div>
         </div>
 
         <!-- Content card -->
@@ -462,6 +504,39 @@ const openInProductHunt = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div class="bg-dark-800 rounded-lg p-6 max-w-md w-full border border-dark-700">
+        <h3 class="text-xl font-semibold text-white mb-4">Eliminar post</h3>
+        <p class="text-dark-300 mb-6">
+          ¿Estás seguro de que quieres eliminar
+          <span class="text-white font-medium">"{{ postsStore.currentPost?.title }}"</span>?
+          Esta acción no se puede deshacer.
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button
+            @click="showDeleteConfirm = false"
+            :disabled="isDeleting"
+            class="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="handleDeletePost"
+            :disabled="isDeleting"
+            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            <div v-if="isDeleting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            {{ isDeleting ? 'Eliminando...' : 'Eliminar' }}
+          </button>
         </div>
       </div>
     </div>

@@ -107,6 +107,26 @@ export const usePostsStore = defineStore('posts', () => {
     }
   }
 
+  async function deletePost(id: number): Promise<boolean> {
+    try {
+      await postService.delete(id)
+
+      // Eliminar de la lista local
+      posts.value = posts.value.filter((p) => p.id !== id)
+
+      // Limpiar post actual si es el eliminado
+      if (currentPost.value?.id === id) {
+        currentPost.value = null
+      }
+
+      return true
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar el post'
+      error.value = errorMessage
+      return false
+    }
+  }
+
   async function fetchCategories(): Promise<void> {
     try {
       categories.value = await postService.listCategories()
@@ -176,6 +196,7 @@ export const usePostsStore = defineStore('posts', () => {
     // Actions
     fetchPosts,
     fetchPost,
+    deletePost,
     toggleFavorite,
     fetchCategories,
     setFilters,
