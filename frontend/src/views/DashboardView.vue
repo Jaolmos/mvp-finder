@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import PostCard from '@/components/PostCard.vue'
@@ -21,6 +21,12 @@ const isAnalyzing = ref(false)
 const analyzeMessage = ref('')
 const analyzeError = ref('')
 const ollamaStatus = ref<OllamaStatus | null>(null)
+
+// Progreso del análisis con polling
+const analyzeProgress = ref(0)
+const analyzeTarget = ref(10)
+const initialAnalyzedCount = ref(0)
+let pollingInterval: ReturnType<typeof setInterval> | null = null
 
 // Estadísticas globales
 const globalStats = ref<PostStats | null>(null)
@@ -123,6 +129,56 @@ const handleSync = async () => {
   }
 }
 
+// Iniciar polling para seguir el progreso del análisis
+const startAnalysisPolling = () => {
+  const maxPolls = 20 // 5 minutos máximo (20 * 15 segundos)
+  let pollCount = 0
+
+  pollingInterval = setInterval(async () => {
+    pollCount++
+
+    try {
+      const stats = await postService.getStats()
+      const currentAnalyzed = stats.analyzed_posts
+      analyzeProgress.value = currentAnalyzed - initialAnalyzedCount.value
+
+      // Actualizar mensaje con progreso
+      analyzeMessage.value = `Analizando... (${analyzeProgress.value}/${analyzeTarget.value} completados)`
+
+      // Verificar si terminó o se alcanzó el timeout
+      if (analyzeProgress.value >= analyzeTarget.value || pollCount >= maxPolls) {
+        stopAnalysisPolling()
+      }
+    } catch (error) {
+      console.error('Error al consultar progreso:', error)
+    }
+  }, 15000) // Cada 15 segundos
+}
+
+// Detener polling y finalizar análisis
+const stopAnalysisPolling = async () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
+
+  // Recargar datos finales
+  await Promise.all([
+    postsStore.fetchPosts({ page_size: 10 }),
+    loadStats()
+  ])
+
+  const finalProgress = analyzeProgress.value
+  isAnalyzing.value = false
+  analyzeMessage.value = `Análisis completado (${finalProgress} posts analizados)`
+
+  // Limpiar mensaje después de 5 segundos
+  setTimeout(() => {
+    analyzeMessage.value = ''
+    analyzeProgress.value = 0
+  }, 5000)
+}
+
 // Analizar posts con Ollama
 const handleAnalyze = async () => {
   // Verificar estado de Ollama
@@ -137,35 +193,36 @@ const handleAnalyze = async () => {
   try {
     isAnalyzing.value = true
     analyzeError.value = ''
-    analyzeMessage.value = ''
+    analyzeProgress.value = 0
 
-    const response = await scraperService.analyzePosts({ limit: 10 })
-    analyzeMessage.value = response.message
+    // Guardar conteo inicial para calcular progreso
+    initialAnalyzedCount.value = globalStats.value?.analyzed_posts ?? 0
+    analyzeMessage.value = 'Iniciando análisis... (esto tarda ~3-4 minutos)'
 
-    // Esperar 5 segundos y recargar posts y stats
-    setTimeout(async () => {
-      await Promise.all([
-        postsStore.fetchPosts({ page_size: 10 }),
-        loadStats()
-      ])
-      analyzeMessage.value = 'Análisis completado'
+    const response = await scraperService.analyzePosts({ limit: analyzeTarget.value })
 
-      // Limpiar mensaje después de 3 segundos
-      setTimeout(() => {
-        analyzeMessage.value = ''
-      }, 3000)
-    }, 5000)
+    // Iniciar polling para seguir el progreso real
+    analyzeMessage.value = `Analizando... (0/${analyzeTarget.value} completados)`
+    startAnalysisPolling()
+
   } catch (error: any) {
+    isAnalyzing.value = false
     analyzeError.value = error.response?.data?.message || 'Error al analizar posts'
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
       analyzeError.value = ''
     }, 5000)
-  } finally {
-    isAnalyzing.value = false
   }
 }
+
+// Cleanup al desmontar el componente
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
+})
 </script>
 
 <template>

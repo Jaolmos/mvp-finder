@@ -128,7 +128,7 @@ const handleClick = () => {
 
       <!-- Analyzed badge -->
       <div
-        v-if="post.summary"
+        v-if="post.analyzed"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary-500/10 text-secondary-400 text-xs font-medium"
       >
         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
