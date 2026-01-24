@@ -231,7 +231,7 @@ const pageNumbersMobile = computed(() => {
             v-model="minPotential"
             class="w-full md:w-auto px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
-            <option :value="undefined">Todo potencial</option>
+            <option :value="undefined">Potencial</option>
             <option :value="5">Potencial ≥ 5</option>
             <option :value="7">Potencial ≥ 7</option>
             <option :value="8">Potencial ≥ 8</option>
