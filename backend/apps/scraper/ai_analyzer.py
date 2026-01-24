@@ -191,10 +191,10 @@ INSTRUCCIONES:
 - mvp_idea: 3-4 frases con una idea de MVP que podrías construir inspirándote en este producto
 - target_audience: 2-3 frases describiendo el público objetivo (profesión, contexto, necesidades)
 - potential_score: número del 1 al 10 según potencial de mercado
-- tags: 4-5 palabras clave relevantes en minúsculas
+- tags: 4-5 palabras clave relevantes en minúsculas (ej: "productividad", "ia", "saas", "automatización")
 
 Responde SOLO con JSON válido:
-{{"summary":"...","problem":"...","mvp_idea":"...","target_audience":"...","potential_score":7,"tags":["tag1","tag2","tag3","tag4"]}}
+{{"summary":"...","problem":"...","mvp_idea":"...","target_audience":"...","potential_score":7,"tags":["palabra-clave-1","palabra-clave-2","palabra-clave-3","palabra-clave-4"]}}
 
 JSON:"""
 
