@@ -185,16 +185,16 @@ PRODUCTO: {title}
 TAGLINE: {tagline}
 DESCRIPCIÓN: {content}
 
-INSTRUCCIONES:
+INSTRUCCIONES (escribe texto completo, NO uses corchetes ni placeholders):
 - summary: 2-3 frases explicando qué hace el producto
 - problem: 3-4 frases sobre el problema que resuelve y por qué importa
-- mvp_idea: 3-4 frases con una idea de MVP que podrías construir inspirándote en este producto
-- target_audience: 2-3 frases describiendo el público objetivo (profesión, contexto, necesidades)
+- mvp_idea: 3-4 frases con una idea concreta de MVP inspirada en este producto
+- target_audience: 3-4 frases describiendo el público objetivo (profesión, contexto, necesidades)
 - potential_score: número del 1 al 10 según potencial de mercado
-- tags: 4-5 palabras clave relevantes en minúsculas (ej: "productividad", "ia", "saas", "automatización")
+- tags: 4-5 palabras clave en minúsculas (ej: "productividad", "ia", "saas")
 
-Responde SOLO con JSON válido:
-{{"summary":"...","problem":"...","mvp_idea":"...","target_audience":"...","potential_score":7,"tags":["palabra-clave-1","palabra-clave-2","palabra-clave-3","palabra-clave-4"]}}
+Formato JSON:
+{{"summary":"tu resumen aquí","problem":"el problema aquí","mvp_idea":"tu idea aquí","target_audience":"público objetivo aquí","potential_score":7,"tags":["tag1","tag2","tag3"]}}
 
 JSON:"""
 
@@ -270,7 +270,7 @@ JSON:"""
                 summary=str(data.get("summary", ""))[:200],
                 problem=str(data.get("problem", ""))[:500],
                 mvp_idea=str(data.get("mvp_idea", ""))[:500],
-                target_audience=str(data.get("target_audience", ""))[:200],
+                target_audience=str(data.get("target_audience", ""))[:400],
                 potential_score=potential_score,
                 tags=tags,
             )

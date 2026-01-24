@@ -83,8 +83,7 @@ class Post(models.Model):
         blank=True,
         help_text="Idea de MVP sugerida por la IA"
     )
-    target_audience = models.CharField(
-        max_length=200,
+    target_audience = models.TextField(
         blank=True,
         help_text="Público objetivo identificado"
     )
