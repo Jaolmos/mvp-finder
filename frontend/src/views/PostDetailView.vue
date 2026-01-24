@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { usePostsStore } from '@/stores/posts'
+import { scraperService } from '@/services'
+import type { OllamaStatus } from '@/services/scraper'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,11 +12,81 @@ const postsStore = usePostsStore()
 
 const postId = computed(() => parseInt(route.params.id as string))
 
-// Cargar post al montar
-onMounted(async () => {
-  if (postId.value) {
-    await postsStore.fetchPost(postId.value)
+// Estado de análisis IA
+const isAnalyzing = ref(false)
+const analyzeError = ref('')
+const analyzeSuccess = ref('')
+const ollamaStatus = ref<OllamaStatus | null>(null)
+
+// Cargar estado de Ollama
+const loadOllamaStatus = async () => {
+  try {
+    ollamaStatus.value = await scraperService.getOllamaStatus()
+  } catch (error) {
+    console.error('Error al cargar estado de Ollama:', error)
+    ollamaStatus.value = null
   }
+}
+
+// Analizar este post con IA
+const handleAnalyzePost = async () => {
+  if (!postId.value || isAnalyzing.value) return
+
+  try {
+    isAnalyzing.value = true
+    analyzeError.value = ''
+    analyzeSuccess.value = ''
+
+    await scraperService.analyzePosts({ post_ids: [postId.value] })
+
+    // Esperar un poco para que el análisis se complete
+    analyzeSuccess.value = 'Analizando...'
+
+    // Polling para verificar cuando termine el análisis
+    const maxAttempts = 20
+    let attempts = 0
+
+    const checkAnalysis = async () => {
+      attempts++
+      await postsStore.fetchPost(postId.value)
+
+      if (postsStore.currentPost?.analyzed) {
+        isAnalyzing.value = false
+        analyzeSuccess.value = 'Análisis completado'
+        setTimeout(() => {
+          analyzeSuccess.value = ''
+        }, 3000)
+        return
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(checkAnalysis, 3000)
+      } else {
+        isAnalyzing.value = false
+        analyzeSuccess.value = ''
+        analyzeError.value = 'El análisis está tardando más de lo esperado. Recarga la página para ver el resultado.'
+        setTimeout(() => {
+          analyzeError.value = ''
+        }, 5000)
+      }
+    }
+
+    setTimeout(checkAnalysis, 5000)
+  } catch (error: any) {
+    isAnalyzing.value = false
+    analyzeError.value = error.response?.data?.message || 'Error al analizar el post'
+    setTimeout(() => {
+      analyzeError.value = ''
+    }, 5000)
+  }
+}
+
+// Cargar post y estado de Ollama al montar
+onMounted(async () => {
+  await Promise.all([
+    postId.value ? postsStore.fetchPost(postId.value) : Promise.resolve(),
+    loadOllamaStatus()
+  ])
 })
 
 // Formatear fecha
@@ -234,6 +306,82 @@ const openInProductHunt = () => {
             <p class="text-dark-200 whitespace-pre-wrap leading-relaxed">
               {{ postsStore.currentPost.content }}
             </p>
+          </div>
+        </div>
+
+        <!-- Mensajes de análisis -->
+        <div v-if="analyzeError || analyzeSuccess" class="space-y-3">
+          <div
+            v-if="analyzeSuccess"
+            class="bg-primary-500/20 border border-primary-500 text-primary-300 px-4 py-3 rounded-lg flex items-center gap-3"
+          >
+            <div v-if="isAnalyzing" class="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-400"></div>
+            {{ analyzeSuccess }}
+          </div>
+          <div
+            v-if="analyzeError"
+            class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
+          >
+            {{ analyzeError }}
+          </div>
+        </div>
+
+        <!-- Card para analizar con IA (cuando no está analizado) -->
+        <div
+          v-if="!postsStore.currentPost.analyzed && ollamaStatus"
+          class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700"
+        >
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8 text-primary-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              <div>
+                <h3 class="text-lg font-semibold text-white">Análisis IA</h3>
+                <p class="text-dark-400 text-sm">
+                  {{ ollamaStatus.ready ? 'Extrae insights del producto con inteligencia artificial' : 'Ollama no está disponible' }}
+                </p>
+              </div>
+            </div>
+            <button
+              v-if="ollamaStatus.ready"
+              @click="handleAnalyzePost"
+              :disabled="isAnalyzing"
+              class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div v-if="isAnalyzing" class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              {{ isAnalyzing ? 'Analizando...' : 'Analizar con IA' }}
+            </button>
+            <div v-else class="text-yellow-400 text-sm flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+              Modelo no disponible
+            </div>
           </div>
         </div>
 

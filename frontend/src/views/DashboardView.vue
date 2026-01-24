@@ -24,7 +24,7 @@ const ollamaStatus = ref<OllamaStatus | null>(null)
 
 // Progreso del análisis con polling
 const analyzeProgress = ref(0)
-const analyzeTarget = ref(10)
+const analyzeTarget = ref(5)
 const initialAnalyzedCount = ref(0)
 let pollingInterval: ReturnType<typeof setInterval> | null = null
 
@@ -560,7 +560,7 @@ onUnmounted(() => {
                 {{ isAnalyzing ? 'Analizando...' : 'Analizar Posts' }}
               </h3>
               <p class="text-dark-300 text-sm">
-                Extraer insights con IA ({{ ollamaStatus?.ready ? '10 posts' : 'no disponible' }})
+                Extraer insights con IA ({{ ollamaStatus?.ready ? '5 posts' : 'no disponible' }})
               </p>
             </div>
             <svg
