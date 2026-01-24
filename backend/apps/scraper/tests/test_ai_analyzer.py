@@ -236,7 +236,7 @@ class TestPostAnalyzer:
         # Verificar que se llamó a generate con prompt que incluye datos del post
         call_args = mock_client.generate.call_args[0][0]
         assert post.title in call_args
-        assert str(post.votes_count) in call_args
+        assert post.tagline in call_args
 
     @pytest.mark.django_db
     def test_analyze_post_no_response(self, post):

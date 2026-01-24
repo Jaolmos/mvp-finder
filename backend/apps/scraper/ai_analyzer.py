@@ -215,8 +215,6 @@ JSON:"""
             title=post.title,
             tagline=post.tagline or "",
             content=post.content or "",
-            votes_count=post.votes_count,
-            comments_count=post.comments_count,
         )
 
         response = self.client.generate(prompt)
@@ -240,10 +238,20 @@ JSON:"""
             # Limpiar respuesta (puede venir con markdown o texto extra)
             cleaned = response.strip()
 
-            # Buscar JSON en la respuesta
-            json_match = re.search(r'\{[^{}]*\}', cleaned, re.DOTALL)
-            if json_match:
-                cleaned = json_match.group()
+            # Buscar JSON en la respuesta (soporta anidamiento con arrays)
+            start = cleaned.find('{')
+            end = cleaned.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                cleaned = cleaned[start:end + 1]
+
+            # Limpiar saltos de línea y tabs dentro del JSON
+            cleaned = re.sub(r'\s+', ' ', cleaned)
+
+            # Reparar escapes inválidos comunes del LLM
+            cleaned = re.sub(r'\\(?!["\\/bfnrtu])', '', cleaned)
+
+            # Reparar comillas sin escapar dentro de strings
+            cleaned = self._fix_json_quotes(cleaned)
 
             data = json.loads(cleaned)
 
@@ -270,6 +278,22 @@ JSON:"""
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             logger.warning(f"Error al parsear respuesta: {e}. Respuesta: {response[:200]}")
             return None
+
+    def _fix_json_quotes(self, json_str: str) -> str:
+        """
+        Intenta reparar JSON con comillas problemáticas.
+
+        Args:
+            json_str: String JSON potencialmente malformado
+
+        Returns:
+            String JSON reparado
+        """
+        # Reemplazar comillas tipográficas por rectas
+        json_str = json_str.replace('"', '"').replace('"', '"')
+        json_str = json_str.replace(''', "'").replace(''', "'")
+
+        return json_str
 
     def update_post_with_analysis(self, post, result: AnalysisResult) -> None:
         """
