@@ -2,12 +2,12 @@
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
-import PostCard from '@/components/PostCard.vue'
-import { usePostsStore } from '@/stores/posts'
+import ProductCard from '@/components/ProductCard.vue'
+import { useProductsStore } from '@/stores/products'
 
 const router = useRouter()
 const route = useRoute()
-const postsStore = usePostsStore()
+const productsStore = useProductsStore()
 
 // Filtros locales
 const searchQuery = ref('')
@@ -19,13 +19,13 @@ const showOnlyAnalyzed = ref(false)
 // Lista única de topics disponibles
 const availableTopics = computed(() => {
   const topics = new Map<number, string>()
-  postsStore.posts.forEach((post) => {
-    topics.set(post.topic.id, post.topic.name)
+  productsStore.products.forEach((product) => {
+    topics.set(product.topic.id, product.topic.name)
   })
   return Array.from(topics.entries()).sort((a, b) => a[1].localeCompare(b[1]))
 })
 
-// Cargar posts al montar el componente
+// Cargar productos al montar el componente
 onMounted(async () => {
   // Leer query params al montar
   if (route.query.analyzed === 'true') {
@@ -51,7 +51,7 @@ onMounted(async () => {
   }
 
   // Aplicar filtros desde query params
-  await postsStore.fetchPosts({
+  await productsStore.fetchProducts({
     analyzed: showOnlyAnalyzed.value || undefined,
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
@@ -73,8 +73,8 @@ watch(() => route.query, async (newQuery) => {
   const potential = newQuery.min_potential ? parseInt(newQuery.min_potential as string) : undefined
   minPotential.value = potential && !isNaN(potential) ? potential : undefined
 
-  // Recargar posts con los nuevos filtros
-  await postsStore.fetchPosts({
+  // Recargar productos con los nuevos filtros
+  await productsStore.fetchProducts({
     analyzed: showOnlyAnalyzed.value || undefined,
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
@@ -85,7 +85,7 @@ watch(() => route.query, async (newQuery) => {
 
 // Aplicar filtros
 const applyFilters = async () => {
-  await postsStore.fetchPosts({
+  await productsStore.fetchProducts({
     search: searchQuery.value || undefined,
     topic: selectedTopic.value || undefined,
     min_potential: minPotential.value || undefined,
@@ -102,29 +102,29 @@ const clearFilters = async () => {
   minPotential.value = undefined
   showOnlyFavorites.value = false
   showOnlyAnalyzed.value = false
-  postsStore.resetFilters()
-  await postsStore.fetchPosts()
+  productsStore.resetFilters()
+  await productsStore.fetchProducts()
 }
 
 // Manejar toggle de favorito
 const handleToggleFavorite = async (id: number) => {
-  await postsStore.toggleFavorite(id)
+  await productsStore.toggleFavorite(id)
 }
 
-// Navegar al detalle del post
-const handlePostClick = (id: number) => {
-  router.push({ name: 'post-detail', params: { id } })
+// Navegar al detalle del producto
+const handleProductClick = (id: number) => {
+  router.push({ name: 'product-detail', params: { id } })
 }
 
 // Cambiar de página
 const handlePageChange = async (page: number) => {
-  postsStore.goToPage(page)
+  productsStore.goToPage(page)
 }
 
 // Generador de números de página para mostrar (desktop)
 const pageNumbers = computed(() => {
-  const total = postsStore.totalPages
-  const current = postsStore.currentPage
+  const total = productsStore.totalPages
+  const current = productsStore.currentPage
   const pages: (number | string)[] = []
 
   if (total <= 7) {
@@ -160,8 +160,8 @@ const pageNumbers = computed(() => {
 
 // Generador de números de página para móvil (simplificado)
 const pageNumbersMobile = computed(() => {
-  const total = postsStore.totalPages
-  const current = postsStore.currentPage
+  const total = productsStore.totalPages
+  const current = productsStore.currentPage
   const pages: (number | string)[] = []
 
   if (total <= 3) {
@@ -197,9 +197,9 @@ const pageNumbersMobile = computed(() => {
     <div>
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <h1 class="text-xl md:text-2xl font-bold text-white">Posts de Product Hunt</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-white">Productos de Product Hunt</h1>
         <div class="text-sm text-dark-400">
-          {{ postsStore.pagination.count }} posts encontrados
+          {{ productsStore.pagination.count }} productos encontrados
         </div>
       </div>
 
@@ -278,21 +278,21 @@ const pageNumbersMobile = computed(() => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="postsStore.loading" class="flex justify-center items-center py-12">
+      <div v-if="productsStore.loading" class="flex justify-center items-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
 
       <!-- Error state -->
       <div
-        v-else-if="postsStore.error"
+        v-else-if="productsStore.error"
         class="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-6"
       >
-        <p class="text-red-400">{{ postsStore.error }}</p>
+        <p class="text-red-400">{{ productsStore.error }}</p>
       </div>
 
       <!-- Empty state -->
       <div
-        v-else-if="postsStore.posts.length === 0"
+        v-else-if="productsStore.products.length === 0"
         class="bg-dark-800 rounded-lg border border-dark-700 p-12 text-center"
       >
         <svg
@@ -309,40 +309,40 @@ const pageNumbersMobile = computed(() => {
             d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
           />
         </svg>
-        <h3 class="text-lg font-semibold text-white mb-2">No hay posts</h3>
-        <p class="text-dark-400">No se encontraron posts con los filtros aplicados.</p>
+        <h3 class="text-lg font-semibold text-white mb-2">No hay productos</h3>
+        <p class="text-dark-400">No se encontraron productos con los filtros aplicados.</p>
       </div>
 
-      <!-- Posts grid -->
+      <!-- Products grid -->
       <div v-else class="grid gap-4 mb-6">
-        <PostCard
-          v-for="post in postsStore.filteredPosts"
-          :key="post.id"
-          :post="post"
+        <ProductCard
+          v-for="product in productsStore.filteredProducts"
+          :key="product.id"
+          :product="product"
           @toggle-favorite="handleToggleFavorite"
-          @click="handlePostClick"
+          @click="handleProductClick"
         />
       </div>
 
       <!-- Paginación -->
       <div
-        v-if="postsStore.totalPages > 1 && !postsStore.loading"
+        v-if="productsStore.totalPages > 1 && !productsStore.loading"
         class="bg-dark-800 rounded-lg p-4 border border-dark-700"
       >
         <!-- Desktop: layout horizontal -->
         <div class="hidden md:flex items-center justify-between">
           <div class="text-sm text-dark-400">
-            Página {{ postsStore.currentPage }} de {{ postsStore.totalPages }}
+            Página {{ productsStore.currentPage }} de {{ productsStore.totalPages }}
           </div>
 
           <div class="flex items-center gap-2">
             <!-- Botón anterior -->
             <button
-              @click="postsStore.previousPage()"
-              :disabled="!postsStore.hasPreviousPage"
+              @click="productsStore.previousPage()"
+              :disabled="!productsStore.hasPreviousPage"
               class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="
-                postsStore.hasPreviousPage
+                productsStore.hasPreviousPage
                   ? 'bg-dark-700 hover:bg-dark-600 text-white'
                   : 'bg-dark-800 text-dark-600'
               "
@@ -357,7 +357,7 @@ const pageNumbersMobile = computed(() => {
                 @click="handlePageChange(page)"
                 class="px-3 py-2 rounded-lg font-medium transition-colors"
                 :class="
-                  page === postsStore.currentPage
+                  page === productsStore.currentPage
                     ? 'bg-primary-500 text-white'
                     : 'bg-dark-700 hover:bg-dark-600 text-white'
                 "
@@ -369,11 +369,11 @@ const pageNumbersMobile = computed(() => {
 
             <!-- Botón siguiente -->
             <button
-              @click="postsStore.nextPage()"
-              :disabled="!postsStore.hasNextPage"
+              @click="productsStore.nextPage()"
+              :disabled="!productsStore.hasNextPage"
               class="px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="
-                postsStore.hasNextPage
+                productsStore.hasNextPage
                   ? 'bg-dark-700 hover:bg-dark-600 text-white'
                   : 'bg-dark-800 text-dark-600'
               "
@@ -387,17 +387,17 @@ const pageNumbersMobile = computed(() => {
         <div class="md:hidden space-y-3">
           <!-- Indicador de página -->
           <div class="text-sm text-dark-400 text-center">
-            Página {{ postsStore.currentPage }} de {{ postsStore.totalPages }}
+            Página {{ productsStore.currentPage }} de {{ productsStore.totalPages }}
           </div>
 
           <!-- Botones Anterior/Siguiente -->
           <div class="flex gap-2">
             <button
-              @click="postsStore.previousPage()"
-              :disabled="!postsStore.hasPreviousPage"
+              @click="productsStore.previousPage()"
+              :disabled="!productsStore.hasPreviousPage"
               class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="
-                postsStore.hasPreviousPage
+                productsStore.hasPreviousPage
                   ? 'bg-dark-700 hover:bg-dark-600 text-white'
                   : 'bg-dark-800 text-dark-600'
               "
@@ -406,11 +406,11 @@ const pageNumbersMobile = computed(() => {
             </button>
 
             <button
-              @click="postsStore.nextPage()"
-              :disabled="!postsStore.hasNextPage"
+              @click="productsStore.nextPage()"
+              :disabled="!productsStore.hasNextPage"
               class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :class="
-                postsStore.hasNextPage
+                productsStore.hasNextPage
                   ? 'bg-dark-700 hover:bg-dark-600 text-white'
                   : 'bg-dark-800 text-dark-600'
               "
@@ -427,7 +427,7 @@ const pageNumbersMobile = computed(() => {
                 @click="handlePageChange(page)"
                 class="px-3 py-2 rounded-lg font-medium transition-colors min-w-[2.5rem]"
                 :class="
-                  page === postsStore.currentPage
+                  page === productsStore.currentPage
                     ? 'bg-primary-500 text-white'
                     : 'bg-dark-700 hover:bg-dark-600 text-white'
                 "
