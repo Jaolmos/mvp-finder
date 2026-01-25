@@ -386,7 +386,7 @@ onUnmounted(() => {
               />
             </svg>
           </div>
-          <div class="text-3xl font-bold text-accent">{{ productsStore.favoriteCount }}</div>
+          <div class="text-3xl font-bold text-accent">{{ stats.favorites }}</div>
         </div>
       </div>
 
