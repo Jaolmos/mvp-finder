@@ -323,7 +323,7 @@ onUnmounted(() => {
           @click="goToProducts"
         >
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-300 text-sm font-medium">Total Productos</div>
+            <div class="text-dark-300 text-sm font-medium">Productos totales</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-8 w-8 text-primary-500/50"
