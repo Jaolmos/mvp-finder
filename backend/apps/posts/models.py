@@ -1,5 +1,5 @@
 """
-Modelos para la app posts.
+Modelos para la app products.
 """
 
 from django.db import models
@@ -7,11 +7,11 @@ from django.contrib.auth.models import User
 from apps.topics.models import Topic
 
 
-class Post(models.Model):
+class Product(models.Model):
     """
     Modelo para almacenar productos de Product Hunt.
 
-    Cada post representa un producto de Product Hunt que contiene
+    Cada producto representa un producto de Product Hunt que contiene
     una idea, problema o necesidad expresada por sus creadores.
     """
 
@@ -24,7 +24,7 @@ class Post(models.Model):
     topic = models.ForeignKey(
         Topic,
         on_delete=models.CASCADE,
-        related_name='posts',
+        related_name='products',
         help_text="Topic de origen"
     )
     title = models.CharField(
@@ -117,9 +117,10 @@ class Post(models.Model):
     )
 
     class Meta:
+        db_table = 'posts_post'  # Mantener tabla existente
         ordering = ['-created_at_source']
-        verbose_name = "Post"
-        verbose_name_plural = "Posts"
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
         indexes = [
             models.Index(fields=['external_id']),
             models.Index(fields=['analyzed']),
@@ -132,9 +133,9 @@ class Post(models.Model):
 
 class Favorite(models.Model):
     """
-    Modelo para gestionar posts favoritos de usuarios.
+    Modelo para gestionar productos favoritos de usuarios.
 
-    Permite a los usuarios marcar posts como favoritos para
+    Permite a los usuarios marcar productos como favoritos para
     consultarlos más tarde o darles seguimiento.
     """
 
@@ -144,11 +145,11 @@ class Favorite(models.Model):
         related_name='favorites',
         help_text="Usuario que marcó el favorito"
     )
-    post = models.ForeignKey(
-        Post,
+    product = models.ForeignKey(
+        Product,
         on_delete=models.CASCADE,
         related_name='favorited_by',
-        help_text="Post marcado como favorito"
+        help_text="Producto marcado como favorito"
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -157,10 +158,10 @@ class Favorite(models.Model):
 
     class Meta:
         db_table = 'users_favorite'  # Mantener tabla existente
-        unique_together = ['user', 'post']
+        unique_together = ['user', 'product']
         ordering = ['-created_at']
         verbose_name = "Favorito"
         verbose_name_plural = "Favoritos"
 
     def __str__(self):
-        return f"{self.user.username} - {self.post.title[:30]}..."
+        return f"{self.user.username} - {self.product.title[:30]}..."
