@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { usePostsStore } from '../posts'
-import type { Post, PostListResponse, Category } from '@/services/posts'
+import { useProductsStore } from '../products'
+import type { Product, ProductListResponse, Category } from '@/services/products'
 
-// Mock del PostService
-vi.mock('@/services/posts', () => ({
+// Mock del ProductService
+vi.mock('@/services/products', () => ({
   default: {
     list: vi.fn(),
     get: vi.fn(),
@@ -13,13 +13,13 @@ vi.mock('@/services/posts', () => ({
   }
 }))
 
-import postService from '@/services/posts'
+import productService from '@/services/products'
 
-describe('usePostsStore', () => {
-  const mockPost: Post = {
+describe('useProductsStore', () => {
+  const mockProduct: Product = {
     id: 1,
     external_id: 'abc123',
-    title: 'Test Post',
+    title: 'Test Product',
     tagline: 'Test tagline',
     content: 'Test content',
     author: 'testuser',
@@ -34,9 +34,9 @@ describe('usePostsStore', () => {
     is_favorite: false
   }
 
-  const mockPostListResponse: PostListResponse = {
+  const mockProductListResponse: ProductListResponse = {
     count: 1,
-    items: [mockPost]
+    items: [mockProduct]
   }
 
   const mockCategory: Category = {
@@ -56,10 +56,10 @@ describe('usePostsStore', () => {
 
   describe('estado inicial', () => {
     it('tiene valores por defecto correctos', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
 
-      expect(store.posts).toEqual([])
-      expect(store.currentPost).toBeNull()
+      expect(store.products).toEqual([])
+      expect(store.currentProduct).toBeNull()
       expect(store.categories).toEqual([])
       expect(store.filters).toEqual({ page: 1, page_size: 20 })
       expect(store.pagination).toEqual({ count: 0 })
@@ -69,26 +69,26 @@ describe('usePostsStore', () => {
   })
 
   describe('getters', () => {
-    it('filteredPosts retorna los posts', () => {
-      const store = usePostsStore()
-      store.posts = [mockPost]
+    it('filteredProducts retorna los productos', () => {
+      const store = useProductsStore()
+      store.products = [mockProduct]
 
-      expect(store.filteredPosts).toEqual([mockPost])
+      expect(store.filteredProducts).toEqual([mockProduct])
     })
 
-    it('favoriteCount cuenta los posts favoritos', () => {
-      const store = usePostsStore()
-      store.posts = [
-        { ...mockPost, id: 1, is_favorite: true },
-        { ...mockPost, id: 2, is_favorite: false },
-        { ...mockPost, id: 3, is_favorite: true }
+    it('favoriteCount cuenta los productos favoritos', () => {
+      const store = useProductsStore()
+      store.products = [
+        { ...mockProduct, id: 1, is_favorite: true },
+        { ...mockProduct, id: 2, is_favorite: false },
+        { ...mockProduct, id: 3, is_favorite: true }
       ]
 
       expect(store.favoriteCount).toBe(2)
     })
 
     it('hasNextPage es true cuando hay más páginas', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 50
       store.filters.page = 1
       store.filters.page_size = 20
@@ -97,7 +97,7 @@ describe('usePostsStore', () => {
     })
 
     it('hasNextPage es false cuando estamos en la última página', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 20
       store.filters.page = 1
       store.filters.page_size = 20
@@ -106,28 +106,28 @@ describe('usePostsStore', () => {
     })
 
     it('hasPreviousPage es true cuando hay página anterior', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters.page = 2
 
       expect(store.hasPreviousPage).toBe(true)
     })
 
     it('hasPreviousPage es false cuando estamos en página 1', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters.page = 1
 
       expect(store.hasPreviousPage).toBe(false)
     })
 
     it('currentPage retorna la página actual', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters.page = 3
 
       expect(store.currentPage).toBe(3)
     })
 
     it('totalPages calcula correctamente el total de páginas', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 45
       store.filters.page_size = 20
 
@@ -135,23 +135,23 @@ describe('usePostsStore', () => {
     })
   })
 
-  describe('fetchPosts', () => {
-    it('carga posts correctamente', async () => {
-      vi.mocked(postService.list).mockResolvedValue(mockPostListResponse)
+  describe('fetchProducts', () => {
+    it('carga productos correctamente', async () => {
+      vi.mocked(productService.list).mockResolvedValue(mockProductListResponse)
 
-      const store = usePostsStore()
-      await store.fetchPosts()
+      const store = useProductsStore()
+      await store.fetchProducts()
 
-      expect(store.posts).toEqual([mockPost])
+      expect(store.products).toEqual([mockProduct])
       expect(store.pagination.count).toBe(1)
       expect(store.error).toBeNull()
     })
 
     it('combina filtros nuevos con existentes', async () => {
-      vi.mocked(postService.list).mockResolvedValue(mockPostListResponse)
+      vi.mocked(productService.list).mockResolvedValue(mockProductListResponse)
 
-      const store = usePostsStore()
-      await store.fetchPosts({ topic: 'test', search: 'query' })
+      const store = useProductsStore()
+      await store.fetchProducts({ topic: 'test', search: 'query' })
 
       expect(store.filters).toEqual({
         page: 1,
@@ -159,28 +159,28 @@ describe('usePostsStore', () => {
         topic: 'test',
         search: 'query'
       })
-      expect(postService.list).toHaveBeenCalledWith(store.filters)
+      expect(productService.list).toHaveBeenCalledWith(store.filters)
     })
 
-    it('maneja errores al cargar posts', async () => {
-      vi.mocked(postService.list).mockRejectedValue(new Error('Error de red'))
+    it('maneja errores al cargar productos', async () => {
+      vi.mocked(productService.list).mockRejectedValue(new Error('Error de red'))
 
-      const store = usePostsStore()
-      await store.fetchPosts()
+      const store = useProductsStore()
+      await store.fetchProducts()
 
-      expect(store.posts).toEqual([])
+      expect(store.products).toEqual([])
       expect(store.error).toBe('Error de red')
     })
 
     it('muestra loading durante la carga', async () => {
-      vi.mocked(postService.list).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockPostListResponse), 100))
+      vi.mocked(productService.list).mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(mockProductListResponse), 100))
       )
 
-      const store = usePostsStore()
+      const store = useProductsStore()
 
       expect(store.loading).toBe(false)
-      const fetchPromise = store.fetchPosts()
+      const fetchPromise = store.fetchProducts()
       expect(store.loading).toBe(true)
 
       await fetchPromise
@@ -188,68 +188,68 @@ describe('usePostsStore', () => {
     })
   })
 
-  describe('fetchPost', () => {
-    it('carga un post correctamente', async () => {
-      vi.mocked(postService.get).mockResolvedValue(mockPost)
+  describe('fetchProduct', () => {
+    it('carga un producto correctamente', async () => {
+      vi.mocked(productService.get).mockResolvedValue(mockProduct)
 
-      const store = usePostsStore()
-      await store.fetchPost(1)
+      const store = useProductsStore()
+      await store.fetchProduct(1)
 
-      expect(store.currentPost).toEqual(mockPost)
+      expect(store.currentProduct).toEqual(mockProduct)
       expect(store.error).toBeNull()
     })
 
-    it('maneja errores al cargar un post', async () => {
-      vi.mocked(postService.get).mockRejectedValue(new Error('Post no encontrado'))
+    it('maneja errores al cargar un producto', async () => {
+      vi.mocked(productService.get).mockRejectedValue(new Error('Producto no encontrado'))
 
-      const store = usePostsStore()
-      await store.fetchPost(999)
+      const store = useProductsStore()
+      await store.fetchProduct(999)
 
-      expect(store.currentPost).toBeNull()
-      expect(store.error).toBe('Post no encontrado')
+      expect(store.currentProduct).toBeNull()
+      expect(store.error).toBe('Producto no encontrado')
     })
   })
 
   describe('toggleFavorite', () => {
-    it('marca un post como favorito', async () => {
-      vi.mocked(postService.toggleFavorite).mockResolvedValue({ is_favorite: true })
+    it('marca un producto como favorito', async () => {
+      vi.mocked(productService.toggleFavorite).mockResolvedValue({ is_favorite: true })
 
-      const store = usePostsStore()
-      store.posts = [mockPost]
+      const store = useProductsStore()
+      store.products = [mockProduct]
 
       const result = await store.toggleFavorite(1)
 
       expect(result).toBe(true)
-      expect(store.posts[0]?.is_favorite).toBe(true)
+      expect(store.products[0]?.is_favorite).toBe(true)
     })
 
-    it('desmarca un post como favorito', async () => {
-      vi.mocked(postService.toggleFavorite).mockResolvedValue({ is_favorite: false })
+    it('desmarca un producto como favorito', async () => {
+      vi.mocked(productService.toggleFavorite).mockResolvedValue({ is_favorite: false })
 
-      const store = usePostsStore()
-      store.posts = [{ ...mockPost, is_favorite: true }]
+      const store = useProductsStore()
+      store.products = [{ ...mockProduct, is_favorite: true }]
 
       const result = await store.toggleFavorite(1)
 
       expect(result).toBe(false)
-      expect(store.posts[0]?.is_favorite).toBe(false)
+      expect(store.products[0]?.is_favorite).toBe(false)
     })
 
-    it('actualiza currentPost si está cargado', async () => {
-      vi.mocked(postService.toggleFavorite).mockResolvedValue({ is_favorite: true })
+    it('actualiza currentProduct si está cargado', async () => {
+      vi.mocked(productService.toggleFavorite).mockResolvedValue({ is_favorite: true })
 
-      const store = usePostsStore()
-      store.currentPost = mockPost
+      const store = useProductsStore()
+      store.currentProduct = mockProduct
 
       await store.toggleFavorite(1)
 
-      expect(store.currentPost?.is_favorite).toBe(true)
+      expect(store.currentProduct?.is_favorite).toBe(true)
     })
 
     it('maneja errores al marcar favorito', async () => {
-      vi.mocked(postService.toggleFavorite).mockRejectedValue(new Error('Error de servidor'))
+      vi.mocked(productService.toggleFavorite).mockRejectedValue(new Error('Error de servidor'))
 
-      const store = usePostsStore()
+      const store = useProductsStore()
       const result = await store.toggleFavorite(1)
 
       expect(result).toBe(false)
@@ -259,9 +259,9 @@ describe('usePostsStore', () => {
 
   describe('fetchCategories', () => {
     it('carga categorías correctamente', async () => {
-      vi.mocked(postService.listCategories).mockResolvedValue([mockCategory])
+      vi.mocked(productService.listCategories).mockResolvedValue([mockCategory])
 
-      const store = usePostsStore()
+      const store = useProductsStore()
       await store.fetchCategories()
 
       expect(store.categories).toEqual([mockCategory])
@@ -269,9 +269,9 @@ describe('usePostsStore', () => {
     })
 
     it('maneja errores al cargar categorías', async () => {
-      vi.mocked(postService.listCategories).mockRejectedValue(new Error('Error de red'))
+      vi.mocked(productService.listCategories).mockRejectedValue(new Error('Error de red'))
 
-      const store = usePostsStore()
+      const store = useProductsStore()
       await store.fetchCategories()
 
       expect(store.categories).toEqual([])
@@ -281,7 +281,7 @@ describe('usePostsStore', () => {
 
   describe('setFilters', () => {
     it('actualiza los filtros correctamente', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
 
       store.setFilters({ topic: 'test', search: 'query' })
 
@@ -296,7 +296,7 @@ describe('usePostsStore', () => {
 
   describe('resetFilters', () => {
     it('resetea los filtros a valores por defecto', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters = { page: 5, page_size: 50, topic: 'test' }
 
       store.resetFilters()
@@ -307,11 +307,11 @@ describe('usePostsStore', () => {
 
   describe('paginación', () => {
     beforeEach(() => {
-      vi.mocked(postService.list).mockResolvedValue(mockPostListResponse)
+      vi.mocked(productService.list).mockResolvedValue(mockProductListResponse)
     })
 
     it('nextPage incrementa la página si hay siguiente', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 50
       store.filters.page = 1
       store.filters.page_size = 20
@@ -322,7 +322,7 @@ describe('usePostsStore', () => {
     })
 
     it('nextPage no hace nada si no hay página siguiente', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 20
       store.filters.page = 1
       store.filters.page_size = 20
@@ -330,11 +330,11 @@ describe('usePostsStore', () => {
       store.nextPage()
 
       expect(store.filters.page).toBe(1)
-      expect(postService.list).not.toHaveBeenCalled()
+      expect(productService.list).not.toHaveBeenCalled()
     })
 
     it('previousPage decrementa la página si hay anterior', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters.page = 2
 
       store.previousPage()
@@ -343,17 +343,17 @@ describe('usePostsStore', () => {
     })
 
     it('previousPage no hace nada si está en página 1', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.filters.page = 1
 
       store.previousPage()
 
       expect(store.filters.page).toBe(1)
-      expect(postService.list).not.toHaveBeenCalled()
+      expect(productService.list).not.toHaveBeenCalled()
     })
 
     it('goToPage va a una página específica', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 100
       store.filters.page_size = 20
 
@@ -363,7 +363,7 @@ describe('usePostsStore', () => {
     })
 
     it('goToPage no hace nada si la página es inválida', async () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.pagination.count = 100
       store.filters.page_size = 20
       store.filters.page = 2
@@ -378,7 +378,7 @@ describe('usePostsStore', () => {
 
   describe('clearError', () => {
     it('limpia el error', () => {
-      const store = usePostsStore()
+      const store = useProductsStore()
       store.error = 'Algún error'
 
       store.clearError()
@@ -387,20 +387,16 @@ describe('usePostsStore', () => {
     })
   })
 
-  describe('clearCurrentPost', () => {
-    it('limpia el post actual', () => {
-      const store = usePostsStore()
-      store.currentPost = mockPost
+  describe('clearCurrentProduct', () => {
+    it('limpia el producto actual', () => {
+      const store = useProductsStore()
+      store.currentProduct = mockProduct
 
-      store.clearCurrentPost()
+      store.clearCurrentProduct()
 
-      expect(store.currentPost).toBeNull()
+      expect(store.currentProduct).toBeNull()
     })
   })
 })
 
-// Ejecutar este test:
-//   cd frontend && npm run test -- src/stores/__tests__/posts.spec.ts
-//
-// Ejecutar todos los tests:
-//   cd frontend && npm run test
+// Ejecutar: cd frontend && npm run test -- src/stores/__tests__/products.spec.ts

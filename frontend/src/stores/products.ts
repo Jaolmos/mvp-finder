@@ -1,18 +1,18 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import postService, {
-  type Post,
-  type PostFilters,
-  type PostListResponse,
+import productService, {
+  type Product,
+  type ProductFilters,
+  type ProductListResponse,
   type Category
-} from '@/services/posts'
+} from '@/services/products'
 
-export const usePostsStore = defineStore('posts', () => {
+export const useProductsStore = defineStore('products', () => {
   // State
-  const posts = ref<Post[]>([])
-  const currentPost = ref<Post | null>(null)
+  const products = ref<Product[]>([])
+  const currentProduct = ref<Product | null>(null)
   const categories = ref<Category[]>([])
-  const filters = ref<PostFilters>({
+  const filters = ref<ProductFilters>({
     page: 1,
     page_size: 20
   })
@@ -23,13 +23,13 @@ export const usePostsStore = defineStore('posts', () => {
   const error = ref<string | null>(null)
 
   // Getters
-  const filteredPosts = computed(() => {
-    // Los posts ya vienen filtrados del backend
-    return posts.value
+  const filteredProducts = computed(() => {
+    // Los productos ya vienen filtrados del backend
+    return products.value
   })
 
   const favoriteCount = computed(() => {
-    return posts.value.filter((post) => post.is_favorite).length
+    return products.value.filter((product) => product.is_favorite).length
   })
 
   const hasNextPage = computed(() => {
@@ -45,7 +45,7 @@ export const usePostsStore = defineStore('posts', () => {
   })
 
   // Actions
-  async function fetchPosts(newFilters?: Partial<PostFilters>): Promise<void> {
+  async function fetchProducts(newFilters?: Partial<ProductFilters>): Promise<void> {
     loading.value = true
     error.value = null
 
@@ -55,30 +55,30 @@ export const usePostsStore = defineStore('posts', () => {
         filters.value = { ...filters.value, ...newFilters }
       }
 
-      const response: PostListResponse = await postService.list(filters.value)
-      posts.value = response.items
+      const response: ProductListResponse = await productService.list(filters.value)
+      products.value = response.items
       pagination.value = {
         count: response.count
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar posts'
+      const errorMessage = err instanceof Error ? err.message : 'Error al cargar productos'
       error.value = errorMessage
-      posts.value = []
+      products.value = []
     } finally {
       loading.value = false
     }
   }
 
-  async function fetchPost(id: number): Promise<void> {
+  async function fetchProduct(id: number): Promise<void> {
     loading.value = true
     error.value = null
 
     try {
-      currentPost.value = await postService.get(id)
+      currentProduct.value = await productService.get(id)
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al cargar el post'
+      const errorMessage = err instanceof Error ? err.message : 'Error al cargar el producto'
       error.value = errorMessage
-      currentPost.value = null
+      currentProduct.value = null
     } finally {
       loading.value = false
     }
@@ -86,17 +86,17 @@ export const usePostsStore = defineStore('posts', () => {
 
   async function toggleFavorite(id: number): Promise<boolean> {
     try {
-      const result = await postService.toggleFavorite(id)
+      const result = await productService.toggleFavorite(id)
 
-      // Actualizar el post en la lista
-      const postIndex = posts.value.findIndex((p) => p.id === id)
-      if (postIndex !== -1 && posts.value[postIndex]) {
-        posts.value[postIndex].is_favorite = result.is_favorite
+      // Actualizar el producto en la lista
+      const productIndex = products.value.findIndex((p) => p.id === id)
+      if (productIndex !== -1 && products.value[productIndex]) {
+        products.value[productIndex].is_favorite = result.is_favorite
       }
 
-      // Actualizar el post actual si está cargado
-      if (currentPost.value?.id === id) {
-        currentPost.value.is_favorite = result.is_favorite
+      // Actualizar el producto actual si está cargado
+      if (currentProduct.value?.id === id) {
+        currentProduct.value.is_favorite = result.is_favorite
       }
 
       return result.is_favorite
@@ -107,21 +107,21 @@ export const usePostsStore = defineStore('posts', () => {
     }
   }
 
-  async function deletePost(id: number): Promise<boolean> {
+  async function deleteProduct(id: number): Promise<boolean> {
     try {
-      await postService.delete(id)
+      await productService.delete(id)
 
       // Eliminar de la lista local
-      posts.value = posts.value.filter((p) => p.id !== id)
+      products.value = products.value.filter((p) => p.id !== id)
 
-      // Limpiar post actual si es el eliminado
-      if (currentPost.value?.id === id) {
-        currentPost.value = null
+      // Limpiar producto actual si es el eliminado
+      if (currentProduct.value?.id === id) {
+        currentProduct.value = null
       }
 
       return true
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar el post'
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar el producto'
       error.value = errorMessage
       return false
     }
@@ -129,7 +129,7 @@ export const usePostsStore = defineStore('posts', () => {
 
   async function fetchCategories(): Promise<void> {
     try {
-      categories.value = await postService.listCategories()
+      categories.value = await productService.listCategories()
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar categorías'
       error.value = errorMessage
@@ -137,7 +137,7 @@ export const usePostsStore = defineStore('posts', () => {
     }
   }
 
-  function setFilters(newFilters: Partial<PostFilters>): void {
+  function setFilters(newFilters: Partial<ProductFilters>): void {
     filters.value = { ...filters.value, ...newFilters }
   }
 
@@ -151,21 +151,21 @@ export const usePostsStore = defineStore('posts', () => {
   function nextPage(): void {
     if (hasNextPage.value) {
       filters.value.page = (filters.value.page || 1) + 1
-      fetchPosts()
+      fetchProducts()
     }
   }
 
   function previousPage(): void {
     if (hasPreviousPage.value && (filters.value.page || 1) > 1) {
       filters.value.page = (filters.value.page || 1) - 1
-      fetchPosts()
+      fetchProducts()
     }
   }
 
   function goToPage(page: number): void {
     if (page > 0 && page <= totalPages.value) {
       filters.value.page = page
-      fetchPosts()
+      fetchProducts()
     }
   }
 
@@ -173,30 +173,30 @@ export const usePostsStore = defineStore('posts', () => {
     error.value = null
   }
 
-  function clearCurrentPost(): void {
-    currentPost.value = null
+  function clearCurrentProduct(): void {
+    currentProduct.value = null
   }
 
   return {
     // State
-    posts,
-    currentPost,
+    products,
+    currentProduct,
     categories,
     filters,
     pagination,
     loading,
     error,
     // Getters
-    filteredPosts,
+    filteredProducts,
     favoriteCount,
     hasNextPage,
     hasPreviousPage,
     currentPage,
     totalPages,
     // Actions
-    fetchPosts,
-    fetchPost,
-    deletePost,
+    fetchProducts,
+    fetchProduct,
+    deleteProduct,
     toggleFavorite,
     fetchCategories,
     setFilters,
@@ -205,6 +205,6 @@ export const usePostsStore = defineStore('posts', () => {
     previousPage,
     goToPage,
     clearError,
-    clearCurrentPost
+    clearCurrentProduct
   }
 })
