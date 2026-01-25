@@ -2,14 +2,14 @@
 import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
-import PostCard from '@/components/PostCard.vue'
-import { usePostsStore } from '@/stores/posts'
-import { scraperService, postService } from '@/services'
+import ProductCard from '@/components/ProductCard.vue'
+import { useProductsStore } from '@/stores/products'
+import { scraperService, productService } from '@/services'
 import type { OllamaStatus } from '@/services/scraper'
-import type { PostStats } from '@/services/posts'
+import type { ProductStats } from '@/services/products'
 
 const router = useRouter()
-const postsStore = usePostsStore()
+const productsStore = useProductsStore()
 
 // Estado de sincronización
 const isSyncing = ref(false)
@@ -39,7 +39,7 @@ interface AnalysisState {
 }
 
 // Estadísticas globales
-const globalStats = ref<PostStats | null>(null)
+const globalStats = ref<ProductStats | null>(null)
 
 // Guardar estado del análisis en localStorage
 const saveAnalysisState = (state: AnalysisState | null) => {
@@ -80,12 +80,12 @@ const resumeAnalysisIfNeeded = async () => {
   isAnalyzing.value = true
 
   // Calcular progreso actual
-  const currentAnalyzed = globalStats.value?.analyzed_posts ?? 0
+  const currentAnalyzed = globalStats.value?.analyzed_products ?? 0
   analyzeProgress.value = currentAnalyzed - initialAnalyzedCount.value
 
   // Si ya terminó, limpiar
   if (analyzeProgress.value >= analyzeTarget.value) {
-    analyzeMessage.value = `Análisis completado (${analyzeProgress.value} posts analizados)`
+    analyzeMessage.value = `Análisis completado (${analyzeProgress.value} productos analizados)`
     isAnalyzing.value = false
     saveAnalysisState(null)
     setTimeout(() => {
@@ -99,10 +99,10 @@ const resumeAnalysisIfNeeded = async () => {
   startAnalysisPolling()
 }
 
-// Cargar posts, stats y estado de Ollama al montar
+// Cargar productos, stats y estado de Ollama al montar
 onMounted(async () => {
   await Promise.all([
-    postsStore.fetchPosts({ page_size: 10 }),
+    productsStore.fetchProducts({ page_size: 10 }),
     loadOllamaStatus(),
     loadStats()
   ])
@@ -124,7 +124,7 @@ const loadOllamaStatus = async () => {
 // Cargar estadísticas globales
 const loadStats = async () => {
   try {
-    globalStats.value = await postService.getStats()
+    globalStats.value = await productService.getStats()
   } catch (error) {
     console.error('Error al cargar stats:', error)
   }
@@ -133,24 +133,24 @@ const loadStats = async () => {
 // Estadísticas calculadas
 const stats = computed(() => {
   return {
-    total: globalStats.value?.total_posts ?? postsStore.pagination.count,
-    analyzed: globalStats.value?.analyzed_posts ?? 0,
-    favorites: globalStats.value?.favorites_count ?? postsStore.favoriteCount
+    total: globalStats.value?.total_products ?? productsStore.pagination.count,
+    analyzed: globalStats.value?.analyzed_products ?? 0,
+    favorites: globalStats.value?.favorites_count ?? productsStore.favoriteCount
   }
 })
 
-// Posts recientes (máximo 5)
-const recentPosts = computed(() => {
-  return postsStore.posts.slice(0, 5)
+// Productos recientes (máximo 5)
+const recentProducts = computed(() => {
+  return productsStore.products.slice(0, 5)
 })
 
 // Navegar a todas las vistas
-const goToPosts = () => {
-  router.push({ name: 'posts' })
+const goToProducts = () => {
+  router.push({ name: 'products' })
 }
 
-const goToAnalyzedPosts = () => {
-  router.push({ name: 'posts', query: { analyzed: 'true' } })
+const goToAnalyzedProducts = () => {
+  router.push({ name: 'products', query: { analyzed: 'true' } })
 }
 
 const goToTopics = () => {
@@ -158,27 +158,27 @@ const goToTopics = () => {
 }
 
 const handleToggleFavorite = async (id: number) => {
-  await postsStore.toggleFavorite(id)
+  await productsStore.toggleFavorite(id)
 }
 
-const handlePostClick = (id: number) => {
-  router.push({ name: 'post-detail', params: { id } })
+const handleProductClick = (id: number) => {
+  router.push({ name: 'product-detail', params: { id } })
 }
 
-// Sincronizar posts de Product Hunt
+// Sincronizar productos de Product Hunt
 const handleSync = async () => {
   try {
     isSyncing.value = true
     syncError.value = ''
     syncMessage.value = ''
 
-    const response = await scraperService.syncPosts()
+    const response = await scraperService.syncProducts()
     syncMessage.value = response.message
 
-    // Esperar 3 segundos y recargar posts y stats
+    // Esperar 3 segundos y recargar productos y stats
     setTimeout(async () => {
       await Promise.all([
-        postsStore.fetchPosts({ page_size: 10 }),
+        productsStore.fetchProducts({ page_size: 10 }),
         loadStats()
       ])
       syncMessage.value = 'Sincronización completada'
@@ -189,7 +189,7 @@ const handleSync = async () => {
       }, 3000)
     }, 3000)
   } catch (error: any) {
-    syncError.value = error.response?.data?.message || 'Error al sincronizar posts'
+    syncError.value = error.response?.data?.message || 'Error al sincronizar productos'
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
@@ -209,8 +209,8 @@ const startAnalysisPolling = () => {
     pollCount++
 
     try {
-      const stats = await postService.getStats()
-      const currentAnalyzed = stats.analyzed_posts
+      const stats = await productService.getStats()
+      const currentAnalyzed = stats.analyzed_products
       analyzeProgress.value = currentAnalyzed - initialAnalyzedCount.value
 
       // Actualizar mensaje con progreso
@@ -238,13 +238,13 @@ const stopAnalysisPolling = async () => {
 
   // Recargar datos finales
   await Promise.all([
-    postsStore.fetchPosts({ page_size: 10 }),
+    productsStore.fetchProducts({ page_size: 10 }),
     loadStats()
   ])
 
   const finalProgress = analyzeProgress.value
   isAnalyzing.value = false
-  analyzeMessage.value = `Análisis completado (${finalProgress} posts analizados)`
+  analyzeMessage.value = `Análisis completado (${finalProgress} productos analizados)`
 
   // Limpiar mensaje después de 5 segundos
   setTimeout(() => {
@@ -253,7 +253,7 @@ const stopAnalysisPolling = async () => {
   }, 5000)
 }
 
-// Analizar posts con Ollama
+// Analizar productos con Ollama
 const handleAnalyze = async () => {
   // Verificar estado de Ollama
   if (!ollamaStatus.value?.ready) {
@@ -270,7 +270,7 @@ const handleAnalyze = async () => {
     analyzeProgress.value = 0
 
     // Guardar conteo inicial para calcular progreso
-    initialAnalyzedCount.value = globalStats.value?.analyzed_posts ?? 0
+    initialAnalyzedCount.value = globalStats.value?.analyzed_products ?? 0
     analyzeMessage.value = 'Iniciando análisis... (esto tarda ~3-4 minutos)'
 
     // Persistir estado para poder retomar si el usuario navega
@@ -281,7 +281,7 @@ const handleAnalyze = async () => {
       startedAt: Date.now()
     })
 
-    const response = await scraperService.analyzePosts({ limit: analyzeTarget.value })
+    const response = await scraperService.analyzeProducts({ limit: analyzeTarget.value })
 
     // Iniciar polling para seguir el progreso real
     analyzeMessage.value = `Analizando... (0/${analyzeTarget.value} completados)`
@@ -290,7 +290,7 @@ const handleAnalyze = async () => {
   } catch (error: any) {
     saveAnalysisState(null)
     isAnalyzing.value = false
-    analyzeError.value = error.response?.data?.message || 'Error al analizar posts'
+    analyzeError.value = error.response?.data?.message || 'Error al analizar productos'
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
@@ -317,13 +317,13 @@ onUnmounted(() => {
 
       <!-- Stats cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Total Posts -->
+        <!-- Total Productos -->
         <div
           class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
-          @click="goToPosts"
+          @click="goToProducts"
         >
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-300 text-sm font-medium">Total Posts</div>
+            <div class="text-dark-300 text-sm font-medium">Total Productos</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-8 w-8 text-primary-500/50"
@@ -342,13 +342,13 @@ onUnmounted(() => {
           <div class="text-3xl font-bold text-white">{{ stats.total }}</div>
         </div>
 
-        <!-- Posts Analizados -->
+        <!-- Productos Analizados -->
         <div
           class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-secondary-500 hover:bg-dark-600 transition-all cursor-pointer shadow-lg"
-          @click="goToAnalyzedPosts"
+          @click="goToAnalyzedProducts"
         >
           <div class="flex items-center justify-between mb-2">
-            <div class="text-dark-300 text-sm font-medium">Posts Analizados</div>
+            <div class="text-dark-300 text-sm font-medium">Productos Analizados</div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-8 w-8 text-secondary-500/50"
@@ -386,7 +386,7 @@ onUnmounted(() => {
               />
             </svg>
           </div>
-          <div class="text-3xl font-bold text-accent">{{ postsStore.favoriteCount }}</div>
+          <div class="text-3xl font-bold text-accent">{{ productsStore.favoriteCount }}</div>
         </div>
       </div>
 
@@ -451,17 +451,17 @@ onUnmounted(() => {
 
       <!-- Quick Actions -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Ir a Posts -->
+        <!-- Ir a Productos -->
         <button
-          @click="goToPosts"
+          @click="goToProducts"
           class="bg-dark-700 rounded-lg p-4 sm:p-6 border border-dark-600 hover:border-primary-500 hover:bg-dark-600 transition-all text-left group shadow-lg"
         >
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-primary-400 transition-colors">
-                Ver todos los posts
+                Ver todos los productos
               </h3>
-              <p class="text-dark-300 text-sm">Explorar, filtrar y analizar posts de Product Hunt</p>
+              <p class="text-dark-300 text-sm">Explorar, filtrar y analizar productos de Product Hunt</p>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -511,7 +511,7 @@ onUnmounted(() => {
           </div>
         </button>
 
-        <!-- Sincronizar Posts -->
+        <!-- Sincronizar Productos -->
         <button
           @click="handleSync"
           :disabled="isSyncing"
@@ -520,7 +520,7 @@ onUnmounted(() => {
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-accent transition-colors">
-                {{ isSyncing ? 'Sincronizando...' : 'Sincronizar Posts' }}
+                {{ isSyncing ? 'Sincronizando...' : 'Sincronizar Productos' }}
               </h3>
               <p class="text-dark-300 text-sm">
                 Obtener nuevos productos de Product Hunt
@@ -548,7 +548,7 @@ onUnmounted(() => {
           </div>
         </button>
 
-        <!-- Analizar Posts con IA -->
+        <!-- Analizar Productos con IA -->
         <button
           @click="handleAnalyze"
           :disabled="isAnalyzing || !ollamaStatus?.ready"
@@ -557,10 +557,10 @@ onUnmounted(() => {
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-primary-400 transition-colors">
-                {{ isAnalyzing ? 'Analizando...' : 'Analizar Posts' }}
+                {{ isAnalyzing ? 'Analizando...' : 'Analizar Productos' }}
               </h3>
               <p class="text-dark-300 text-sm">
-                Extraer insights con IA ({{ ollamaStatus?.ready ? '5 posts' : 'no disponible' }})
+                Extraer insights con IA ({{ ollamaStatus?.ready ? '5 productos' : 'no disponible' }})
               </p>
             </div>
             <svg
@@ -586,12 +586,12 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Posts Recientes -->
+      <!-- Productos Recientes -->
       <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
         <div class="flex items-center justify-between mb-4 sm:mb-6">
-          <h2 class="text-lg sm:text-xl font-semibold text-white">Posts Recientes</h2>
+          <h2 class="text-lg sm:text-xl font-semibold text-white">Productos Recientes</h2>
           <button
-            @click="goToPosts"
+            @click="goToProducts"
             class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors"
           >
             Ver todos →
@@ -599,12 +599,12 @@ onUnmounted(() => {
         </div>
 
         <!-- Loading -->
-        <div v-if="postsStore.loading" class="flex justify-center items-center py-8">
+        <div v-if="productsStore.loading" class="flex justify-center items-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
         </div>
 
         <!-- Empty state -->
-        <div v-else-if="recentPosts.length === 0" class="text-center py-12">
+        <div v-else-if="recentProducts.length === 0" class="text-center py-12">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-16 w-16 mx-auto mb-4 text-dark-600"
@@ -619,7 +619,7 @@ onUnmounted(() => {
               d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
             />
           </svg>
-          <h3 class="text-lg font-semibold text-white mb-2">No hay posts</h3>
+          <h3 class="text-lg font-semibold text-white mb-2">No hay productos</h3>
           <p class="text-dark-400 mb-4">Configura tus topics y sincroniza para comenzar.</p>
           <button
             @click="goToTopics"
@@ -629,14 +629,14 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Posts list -->
+        <!-- Products list -->
         <div v-else class="space-y-4">
-          <PostCard
-            v-for="post in recentPosts"
-            :key="post.id"
-            :post="post"
+          <ProductCard
+            v-for="product in recentProducts"
+            :key="product.id"
+            :product="product"
             @toggle-favorite="handleToggleFavorite"
-            @click="handlePostClick"
+            @click="handleProductClick"
           />
         </div>
       </div>
