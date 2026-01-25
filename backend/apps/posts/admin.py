@@ -1,15 +1,15 @@
 """
-Configuración del admin para la app posts.
+Configuración del admin para la app products.
 """
 
 from django.contrib import admin
-from .models import Post, Favorite
+from .models import Product, Favorite
 
 
-@admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
     """
-    Configuración del panel de administración para Post.
+    Configuración del panel de administración para Product.
     """
 
     list_display = ['title', 'topic', 'author', 'score', 'votes_count', 'comments_count', 'analyzed', 'created_at_source']
@@ -45,16 +45,16 @@ class FavoriteAdmin(admin.ModelAdmin):
     Configuración del panel de administración para Favorite.
     """
 
-    list_display = ['user', 'post', 'created_at']
+    list_display = ['user', 'product', 'created_at']
     list_filter = ['created_at', 'user']
-    search_fields = ['user__username', 'post__title']
+    search_fields = ['user__username', 'product__title']
     readonly_fields = ['created_at']
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
 
     fieldsets = (
         ('Información del Favorito', {
-            'fields': ('user', 'post')
+            'fields': ('user', 'product')
         }),
         ('Metadatos', {
             'fields': ('created_at',),
@@ -63,6 +63,6 @@ class FavoriteAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        """Optimiza consultas incluyendo user y post relacionados."""
+        """Optimiza consultas incluyendo user y product relacionados."""
         qs = super().get_queryset(request)
-        return qs.select_related('user', 'post', 'post__topic')
+        return qs.select_related('user', 'product', 'product__topic')

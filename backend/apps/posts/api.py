@@ -1,5 +1,5 @@
 """
-API de posts con Django Ninja.
+API de products con Django Ninja.
 """
 
 from ninja import Router, Schema, Field
@@ -8,9 +8,9 @@ from typing import List, Optional
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from config.auth import JWTAuth
-from .models import Post, Favorite
+from .models import Product, Favorite
 
-router = Router(tags=["Posts"])
+router = Router(tags=["Products"])
 
 
 # Schemas
@@ -20,8 +20,8 @@ class TopicSchema(Schema):
     name: str
 
 
-class PostListSchema(Schema):
-    """Schema para listar posts (sin contenido completo)."""
+class ProductListSchema(Schema):
+    """Schema para listar products (sin contenido completo)."""
     id: int
     external_id: str
     topic: TopicSchema
@@ -41,8 +41,8 @@ class PostListSchema(Schema):
     is_favorite: bool = False
 
 
-class PostDetailSchema(Schema):
-    """Schema para detalle de post (con contenido completo)."""
+class ProductDetailSchema(Schema):
+    """Schema para detalle de product (con contenido completo)."""
     id: int
     external_id: str
     topic: TopicSchema
@@ -76,9 +76,9 @@ class FavoriteToggleSchema(Schema):
 
 
 class StatsSchema(Schema):
-    """Schema para estadísticas de posts."""
-    total_posts: int
-    analyzed_posts: int
+    """Schema para estadísticas de products."""
+    total_products: int
+    analyzed_products: int
     favorites_count: int
 
 
@@ -86,17 +86,17 @@ class StatsSchema(Schema):
 @router.get("/stats/", response=StatsSchema, auth=JWTAuth())
 def get_stats(request):
     """
-    Obtener estadísticas globales de posts.
+    Obtener estadísticas globales de products.
     """
     user = request.auth
     return {
-        "total_posts": Post.objects.count(),
-        "analyzed_posts": Post.objects.filter(analyzed=True).count(),
+        "total_products": Product.objects.count(),
+        "analyzed_products": Product.objects.filter(analyzed=True).count(),
         "favorites_count": Favorite.objects.filter(user=user).count(),
     }
-@router.get("/", response=List[PostListSchema], auth=JWTAuth())
+@router.get("/", response=List[ProductListSchema], auth=JWTAuth())
 @paginate(PageNumberPagination, page_size=20)
-def list_posts(
+def list_products(
     request,
     topic: Optional[int] = None,
     analyzed: Optional[bool] = None,
@@ -106,45 +106,45 @@ def list_posts(
     is_favorite: Optional[bool] = None
 ):
     """
-    Listar posts con filtros y paginación.
+    Listar products con filtros y paginación.
 
     Requiere autenticación JWT.
     """
     from django.db.models import Exists, OuterRef
 
     user = request.auth
-    posts = Post.objects.select_related('topic').annotate(
-        is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
+    products = Product.objects.select_related('topic').annotate(
+        is_favorite=Exists(Favorite.objects.filter(user=user, product=OuterRef('pk')))
     ).all()
 
     # Aplicar filtros
     if topic:
-        posts = posts.filter(topic_id=topic)
+        products = products.filter(topic_id=topic)
 
     if analyzed is not None:
-        posts = posts.filter(analyzed=analyzed)
+        products = products.filter(analyzed=analyzed)
 
     if min_score:
-        posts = posts.filter(score__gte=min_score)
+        products = products.filter(score__gte=min_score)
 
     if min_potential:
-        posts = posts.filter(potential_score__gte=min_potential)
+        products = products.filter(potential_score__gte=min_potential)
 
     if search:
         from django.db.models import Q
-        posts = posts.filter(Q(title__icontains=search) | Q(content__icontains=search))
+        products = products.filter(Q(title__icontains=search) | Q(content__icontains=search))
 
     if is_favorite:
-        posts = posts.filter(is_favorite=True)
+        products = products.filter(is_favorite=True)
 
-    return posts
+    return products
 
 
-@router.get("/favorites/", response=List[PostListSchema], auth=JWTAuth())
+@router.get("/favorites/", response=List[ProductListSchema], auth=JWTAuth())
 @paginate(PageNumberPagination, page_size=20)
 def list_favorites(request):
     """
-    Listar posts favoritos del usuario actual.
+    Listar products favoritos del usuario actual.
 
     Requiere autenticación JWT.
     """
@@ -152,30 +152,30 @@ def list_favorites(request):
     from django.db.models.functions import Coalesce
 
     user = request.auth
-    favorite_ids = Favorite.objects.filter(user=user).values_list('post_id', flat=True)
-    posts = Post.objects.filter(id__in=favorite_ids).select_related('topic').annotate(
+    favorite_ids = Favorite.objects.filter(user=user).values_list('product_id', flat=True)
+    products = Product.objects.filter(id__in=favorite_ids).select_related('topic').annotate(
         is_favorite=Value(True)
     )
-    return posts
+    return products
 
 
-@router.get("/{post_id}/", response=PostDetailSchema, auth=JWTAuth())
-def get_post(request, post_id: int):
+@router.get("/{product_id}/", response=ProductDetailSchema, auth=JWTAuth())
+def get_product(request, product_id: int):
     """
-    Obtener detalle de un post.
+    Obtener detalle de un product.
 
     Requiere autenticación JWT.
     """
     from django.db.models import Exists, OuterRef
 
     user = request.auth
-    post = get_object_or_404(
-        Post.objects.select_related('topic').annotate(
-            is_favorite=Exists(Favorite.objects.filter(user=user, post=OuterRef('pk')))
+    product = get_object_or_404(
+        Product.objects.select_related('topic').annotate(
+            is_favorite=Exists(Favorite.objects.filter(user=user, product=OuterRef('pk')))
         ),
-        id=post_id
+        id=product_id
     )
-    return post
+    return product
 
 
 class DeleteResponseSchema(Schema):
@@ -184,42 +184,42 @@ class DeleteResponseSchema(Schema):
     message: str
 
 
-@router.delete("/{post_id}/", response=DeleteResponseSchema, auth=JWTAuth())
-def delete_post(request, post_id: int):
+@router.delete("/{product_id}/", response=DeleteResponseSchema, auth=JWTAuth())
+def delete_product(request, product_id: int):
     """
-    Eliminar un post.
+    Eliminar un product.
 
     Requiere autenticación JWT.
     """
-    post = get_object_or_404(Post, id=post_id)
-    title = post.title
-    post.delete()
+    product = get_object_or_404(Product, id=product_id)
+    title = product.title
+    product.delete()
     return {
         "success": True,
-        "message": f"Post '{title}' eliminado correctamente"
+        "message": f"Producto '{title}' eliminado correctamente"
     }
 
 
-@router.post("/{post_id}/favorite/", response=FavoriteToggleSchema, auth=JWTAuth())
-def toggle_favorite(request, post_id: int):
+@router.post("/{product_id}/favorite/", response=FavoriteToggleSchema, auth=JWTAuth())
+def toggle_favorite(request, product_id: int):
     """
-    Marcar o desmarcar un post como favorito.
+    Marcar o desmarcar un product como favorito.
 
     Requiere autenticación JWT.
     """
     user = request.auth
-    post = get_object_or_404(Post, id=post_id)
+    product = get_object_or_404(Product, id=product_id)
 
-    favorite, created = Favorite.objects.get_or_create(user=user, post=post)
+    favorite, created = Favorite.objects.get_or_create(user=user, product=product)
 
     if not created:
         favorite.delete()
         return {
             "is_favorite": False,
-            "message": "Post eliminado de favoritos"
+            "message": "Producto eliminado de favoritos"
         }
 
     return {
         "is_favorite": True,
-        "message": "Post añadido a favoritos"
+        "message": "Producto añadido a favoritos"
     }
