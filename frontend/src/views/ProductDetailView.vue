@@ -2,15 +2,15 @@
 import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
-import { usePostsStore } from '@/stores/posts'
+import { useProductsStore } from '@/stores/products'
 import { scraperService } from '@/services'
 import type { OllamaStatus } from '@/services/scraper'
 
 const route = useRoute()
 const router = useRouter()
-const postsStore = usePostsStore()
+const productsStore = useProductsStore()
 
-const postId = computed(() => parseInt(route.params.id as string))
+const productId = computed(() => parseInt(route.params.id as string))
 
 // Estado de análisis IA
 const isAnalyzing = ref(false)
@@ -28,16 +28,16 @@ const loadOllamaStatus = async () => {
   }
 }
 
-// Analizar este post con IA
-const handleAnalyzePost = async () => {
-  if (!postId.value || isAnalyzing.value) return
+// Analizar este producto con IA
+const handleAnalyzeProduct = async () => {
+  if (!productId.value || isAnalyzing.value) return
 
   try {
     isAnalyzing.value = true
     analyzeError.value = ''
     analyzeSuccess.value = ''
 
-    await scraperService.analyzePosts({ post_ids: [postId.value] })
+    await scraperService.analyzeProducts({ product_ids: [productId.value] })
 
     // Esperar un poco para que el análisis se complete
     analyzeSuccess.value = 'Analizando...'
@@ -48,9 +48,9 @@ const handleAnalyzePost = async () => {
 
     const checkAnalysis = async () => {
       attempts++
-      await postsStore.fetchPost(postId.value)
+      await productsStore.fetchProduct(productId.value)
 
-      if (postsStore.currentPost?.analyzed) {
+      if (productsStore.currentProduct?.analyzed) {
         isAnalyzing.value = false
         analyzeSuccess.value = 'Análisis completado'
         setTimeout(() => {
@@ -74,25 +74,25 @@ const handleAnalyzePost = async () => {
     setTimeout(checkAnalysis, 5000)
   } catch (error: any) {
     isAnalyzing.value = false
-    analyzeError.value = error.response?.data?.message || 'Error al analizar el post'
+    analyzeError.value = error.response?.data?.message || 'Error al analizar el producto'
     setTimeout(() => {
       analyzeError.value = ''
     }, 5000)
   }
 }
 
-// Cargar post y estado de Ollama al montar
+// Cargar producto y estado de Ollama al montar
 onMounted(async () => {
   await Promise.all([
-    postId.value ? postsStore.fetchPost(postId.value) : Promise.resolve(),
+    productId.value ? productsStore.fetchProduct(productId.value) : Promise.resolve(),
     loadOllamaStatus()
   ])
 })
 
 // Formatear fecha
 const formattedDate = computed(() => {
-  if (!postsStore.currentPost) return ''
-  const date = new Date(postsStore.currentPost.created_at_source)
+  if (!productsStore.currentProduct) return ''
+  const date = new Date(productsStore.currentProduct.created_at_source)
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
@@ -104,20 +104,20 @@ const formattedDate = computed(() => {
 
 // Toggle favorito
 const handleToggleFavorite = async () => {
-  if (postsStore.currentPost) {
-    await postsStore.toggleFavorite(postsStore.currentPost.id)
+  if (productsStore.currentProduct) {
+    await productsStore.toggleFavorite(productsStore.currentProduct.id)
   }
 }
 
 // Volver atrás
 const goBack = () => {
-  router.push({ name: 'posts' })
+  router.push({ name: 'products' })
 }
 
 // Abrir en Product Hunt
 const openInProductHunt = () => {
-  if (postsStore.currentPost) {
-    window.open(postsStore.currentPost.url, '_blank')
+  if (productsStore.currentProduct) {
+    window.open(productsStore.currentProduct.url, '_blank')
   }
 }
 
@@ -125,15 +125,15 @@ const openInProductHunt = () => {
 const showDeleteConfirm = ref(false)
 const isDeleting = ref(false)
 
-// Eliminar post
-const handleDeletePost = async () => {
-  if (!postsStore.currentPost || isDeleting.value) return
+// Eliminar producto
+const handleDeleteProduct = async () => {
+  if (!productsStore.currentProduct || isDeleting.value) return
 
   isDeleting.value = true
-  const success = await postsStore.deletePost(postsStore.currentPost.id)
+  const success = await productsStore.deleteProduct(productsStore.currentProduct.id)
 
   if (success) {
-    router.push({ name: 'posts' })
+    router.push({ name: 'products' })
   } else {
     isDeleting.value = false
     showDeleteConfirm.value = false
@@ -163,31 +163,31 @@ const handleDeletePost = async () => {
             d="M10 19l-7-7m0 0l7-7m-7 7h18"
           />
         </svg>
-        Volver a posts
+        Volver a productos
       </button>
 
       <!-- Loading state -->
-      <div v-if="postsStore.loading" class="flex justify-center items-center py-12">
+      <div v-if="productsStore.loading" class="flex justify-center items-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
 
       <!-- Error state -->
       <div
-        v-else-if="postsStore.error"
+        v-else-if="productsStore.error"
         class="bg-red-500/10 border border-red-500/50 rounded-lg p-6"
       >
-        <h2 class="text-xl font-semibold text-red-400 mb-2">Error al cargar el post</h2>
-        <p class="text-red-300">{{ postsStore.error }}</p>
+        <h2 class="text-xl font-semibold text-red-400 mb-2">Error al cargar el producto</h2>
+        <p class="text-red-300">{{ productsStore.error }}</p>
       </div>
 
-      <!-- Post detail -->
-      <div v-else-if="postsStore.currentPost" class="space-y-4 md:space-y-6">
+      <!-- Product detail -->
+      <div v-else-if="productsStore.currentProduct" class="space-y-4 md:space-y-6">
         <!-- Header card -->
         <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div class="flex-1">
               <h1 class="text-2xl sm:text-3xl font-bold text-white mb-4">
-                {{ postsStore.currentPost.title }}
+                {{ productsStore.currentProduct.title }}
               </h1>
 
               <div class="flex items-center gap-4 text-sm text-dark-400 flex-wrap">
@@ -206,7 +206,7 @@ const handleDeletePost = async () => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  {{ postsStore.currentPost.author }}
+                  {{ productsStore.currentProduct.author }}
                 </span>
 
                 <span class="flex items-center gap-1">
@@ -224,7 +224,7 @@ const handleDeletePost = async () => {
                       d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                     />
                   </svg>
-                  {{ postsStore.currentPost.topic.name }}
+                  {{ productsStore.currentProduct.topic.name }}
                 </span>
 
                 <span class="flex items-center gap-1 text-secondary-400">
@@ -242,7 +242,7 @@ const handleDeletePost = async () => {
                       d="M5 15l7-7 7 7"
                     />
                   </svg>
-                  {{ postsStore.currentPost.score }} puntos
+                  {{ productsStore.currentProduct.score }} puntos
                 </span>
 
                 <span class="flex items-center gap-1">
@@ -270,18 +270,18 @@ const handleDeletePost = async () => {
               @click="handleToggleFavorite"
               class="sm:ml-4 p-3 rounded-lg transition-colors self-start sm:self-auto"
               :class="
-                postsStore.currentPost.is_favorite
+                productsStore.currentProduct.is_favorite
                   ? 'bg-accent/10 text-accent hover:bg-accent/20'
                   : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-accent'
               "
               :title="
-                postsStore.currentPost.is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'
+                productsStore.currentProduct.is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'
               "
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-6 w-6"
-                :fill="postsStore.currentPost.is_favorite ? 'currentColor' : 'none'"
+                :fill="productsStore.currentProduct.is_favorite ? 'currentColor' : 'none'"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
@@ -346,7 +346,7 @@ const handleDeletePost = async () => {
           <h2 class="text-lg sm:text-xl font-semibold text-white mb-4">Contenido</h2>
           <div class="prose prose-invert max-w-none">
             <p class="text-dark-200 whitespace-pre-wrap leading-relaxed">
-              {{ postsStore.currentPost.content }}
+              {{ productsStore.currentProduct.content }}
             </p>
           </div>
         </div>
@@ -370,7 +370,7 @@ const handleDeletePost = async () => {
 
         <!-- Card para analizar con IA (cuando no está analizado) -->
         <div
-          v-if="!postsStore.currentPost.analyzed && ollamaStatus"
+          v-if="!productsStore.currentProduct.analyzed && ollamaStatus"
           class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700"
         >
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -398,7 +398,7 @@ const handleDeletePost = async () => {
             </div>
             <button
               v-if="ollamaStatus.ready"
-              @click="handleAnalyzePost"
+              @click="handleAnalyzeProduct"
               :disabled="isAnalyzing"
               class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -429,7 +429,7 @@ const handleDeletePost = async () => {
 
         <!-- AI Analysis card (si existe) -->
         <div
-          v-if="postsStore.currentPost.analyzed"
+          v-if="productsStore.currentProduct.analyzed"
           class="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 rounded-lg p-4 sm:p-6 border border-primary-500/30"
         >
           <div class="flex items-center justify-between mb-4">
@@ -452,50 +452,50 @@ const handleDeletePost = async () => {
             </div>
             <!-- Potential Score Badge -->
             <div
-              v-if="postsStore.currentPost.potential_score"
+              v-if="productsStore.currentProduct.potential_score"
               class="flex items-center gap-1 px-3 py-1 rounded-full"
               :class="{
-                'bg-green-500/20 text-green-300': postsStore.currentPost.potential_score >= 7,
-                'bg-yellow-500/20 text-yellow-300': postsStore.currentPost.potential_score >= 4 && postsStore.currentPost.potential_score < 7,
-                'bg-red-500/20 text-red-300': postsStore.currentPost.potential_score < 4
+                'bg-green-500/20 text-green-300': productsStore.currentProduct.potential_score >= 7,
+                'bg-yellow-500/20 text-yellow-300': productsStore.currentProduct.potential_score >= 4 && productsStore.currentProduct.potential_score < 7,
+                'bg-red-500/20 text-red-300': productsStore.currentProduct.potential_score < 4
               }"
             >
               <span class="text-sm font-medium">Potencial:</span>
-              <span class="text-lg font-bold">{{ postsStore.currentPost.potential_score }}/10</span>
+              <span class="text-lg font-bold">{{ productsStore.currentProduct.potential_score }}/10</span>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Summary -->
-            <div v-if="postsStore.currentPost.summary" class="bg-dark-800/50 rounded-lg p-4">
+            <div v-if="productsStore.currentProduct.summary" class="bg-dark-800/50 rounded-lg p-4">
               <h3 class="text-sm font-medium text-primary-300 mb-2">Resumen</h3>
-              <p class="text-white">{{ postsStore.currentPost.summary }}</p>
+              <p class="text-white">{{ productsStore.currentProduct.summary }}</p>
             </div>
 
             <!-- Problem -->
-            <div v-if="postsStore.currentPost.problem" class="bg-dark-800/50 rounded-lg p-4">
+            <div v-if="productsStore.currentProduct.problem" class="bg-dark-800/50 rounded-lg p-4">
               <h3 class="text-sm font-medium text-red-300 mb-2">Problema que resuelve</h3>
-              <p class="text-white">{{ postsStore.currentPost.problem }}</p>
+              <p class="text-white">{{ productsStore.currentProduct.problem }}</p>
             </div>
 
             <!-- MVP Idea -->
-            <div v-if="postsStore.currentPost.mvp_idea" class="bg-dark-800/50 rounded-lg p-4 md:col-span-2">
+            <div v-if="productsStore.currentProduct.mvp_idea" class="bg-dark-800/50 rounded-lg p-4 md:col-span-2">
               <h3 class="text-sm font-medium text-accent mb-2">Idea de MVP</h3>
-              <p class="text-white">{{ postsStore.currentPost.mvp_idea }}</p>
+              <p class="text-white">{{ productsStore.currentProduct.mvp_idea }}</p>
             </div>
 
             <!-- Target Audience -->
-            <div v-if="postsStore.currentPost.target_audience" class="bg-dark-800/50 rounded-lg p-4">
+            <div v-if="productsStore.currentProduct.target_audience" class="bg-dark-800/50 rounded-lg p-4">
               <h3 class="text-sm font-medium text-secondary-300 mb-2">Público objetivo</h3>
-              <p class="text-white">{{ postsStore.currentPost.target_audience }}</p>
+              <p class="text-white">{{ productsStore.currentProduct.target_audience }}</p>
             </div>
 
             <!-- Tags -->
-            <div v-if="postsStore.currentPost.tags" class="bg-dark-800/50 rounded-lg p-4">
+            <div v-if="productsStore.currentProduct.tags" class="bg-dark-800/50 rounded-lg p-4">
               <h3 class="text-sm font-medium text-dark-300 mb-2">Tags</h3>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="tag in postsStore.currentPost.tags.split(',')"
+                  v-for="tag in productsStore.currentProduct.tags.split(',')"
                   :key="tag"
                   class="px-2 py-1 bg-dark-700 text-dark-200 rounded text-sm"
                 >
@@ -515,10 +515,10 @@ const handleDeletePost = async () => {
       @click.self="showDeleteConfirm = false"
     >
       <div class="bg-dark-800 rounded-lg p-6 max-w-md w-full border border-dark-700">
-        <h3 class="text-xl font-semibold text-white mb-4">Eliminar post</h3>
+        <h3 class="text-xl font-semibold text-white mb-4">Eliminar producto</h3>
         <p class="text-dark-300 mb-6">
           ¿Estás seguro de que quieres eliminar
-          <span class="text-white font-medium">"{{ postsStore.currentPost?.title }}"</span>?
+          <span class="text-white font-medium">"{{ productsStore.currentProduct?.title }}"</span>?
           Esta acción no se puede deshacer.
         </p>
         <div class="flex gap-3 justify-end">
@@ -530,7 +530,7 @@ const handleDeletePost = async () => {
             Cancelar
           </button>
           <button
-            @click="handleDeletePost"
+            @click="handleDeleteProduct"
             :disabled="isDeleting"
             class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
           >
