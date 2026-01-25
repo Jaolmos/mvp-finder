@@ -4,8 +4,12 @@ Maneja la conexión y autenticación con la API de Product Hunt.
 Usa OAuth 2.0 Client Credentials flow.
 """
 import os
+import time
+import logging
 import httpx
 from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 
 class ProductHuntClient:
@@ -15,10 +19,16 @@ class ProductHuntClient:
     API_URL = "https://api.producthunt.com/v2/api/graphql"
     OAUTH_URL = "https://api.producthunt.com/v2/oauth/token"
 
+    # Rate limiting config
+    REQUEST_DELAY = 1.5  # Segundos entre peticiones
+    MAX_RETRIES = 3  # Máximo reintentos en caso de 429
+    INITIAL_BACKOFF = 5  # Segundos de espera inicial en 429
+
     def __init__(self, api_key: str, api_secret: str):
         self.api_key = api_key
         self.api_secret = api_secret
         self.access_token: Optional[str] = None
+        self._last_request_time: float = 0
         self.headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -92,9 +102,17 @@ class ProductHuntClient:
 
             return self.access_token
 
+    def _wait_for_rate_limit(self) -> None:
+        """Espera el tiempo necesario entre peticiones."""
+        elapsed = time.time() - self._last_request_time
+        if elapsed < self.REQUEST_DELAY:
+            sleep_time = self.REQUEST_DELAY - elapsed
+            logger.debug(f"Rate limit: esperando {sleep_time:.2f}s")
+            time.sleep(sleep_time)
+
     def _execute_query(self, query: str, variables: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Ejecuta una query GraphQL.
+        Ejecuta una query GraphQL con retry y rate limiting.
 
         Args:
             query: Query GraphQL
@@ -104,7 +122,7 @@ class ProductHuntClient:
             Dict con la respuesta de la API
 
         Raises:
-            httpx.HTTPError: Si hay error en la petición
+            httpx.HTTPError: Si hay error en la petición después de reintentos
         """
         # Obtener access token (se cachea después de la primera llamada)
         access_token = self._get_access_token()
@@ -119,15 +137,36 @@ class ProductHuntClient:
         if variables:
             payload["variables"] = variables
 
-        with httpx.Client() as client:
-            response = client.post(
-                self.API_URL,
-                headers=headers,
-                json=payload,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            return response.json()
+        # Retry con exponential backoff
+        for attempt in range(self.MAX_RETRIES + 1):
+            # Respetar rate limit entre peticiones
+            self._wait_for_rate_limit()
+
+            with httpx.Client() as client:
+                response = client.post(
+                    self.API_URL,
+                    headers=headers,
+                    json=payload,
+                    timeout=30.0
+                )
+                self._last_request_time = time.time()
+
+                # Si es 429, hacer backoff y reintentar
+                if response.status_code == 429:
+                    if attempt < self.MAX_RETRIES:
+                        backoff = self.INITIAL_BACKOFF * (2 ** attempt)
+                        logger.warning(f"Rate limit (429). Reintento {attempt + 1}/{self.MAX_RETRIES} en {backoff}s")
+                        time.sleep(backoff)
+                        continue
+                    else:
+                        logger.error("Rate limit: máximo de reintentos alcanzado")
+                        response.raise_for_status()
+
+                response.raise_for_status()
+                return response.json()
+
+        # No debería llegar aquí, pero por seguridad
+        raise httpx.HTTPError("Error inesperado en _execute_query")
 
     def fetch_posts(
         self,
