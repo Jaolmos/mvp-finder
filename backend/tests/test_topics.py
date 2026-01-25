@@ -238,18 +238,18 @@ class TestDeleteTopic:
 
         assert response.status_code == 404
 
-    def test_delete_topic_cascades_posts(self, authenticated_client, topic, post):
-        """Test que al eliminar topic se eliminan sus posts (cascade)."""
+    def test_delete_topic_cascades_products(self, authenticated_client, topic, product):
+        """Test que al eliminar topic se eliminan sus productos (cascade)."""
         topic_id = topic.id
-        post_id = post.id
+        product_id = product.id
 
         response = authenticated_client.delete(f'/topics/{topic_id}/')
 
         assert response.status_code == 200
 
-        # Verificar que el post también se eliminó
-        from apps.posts.models import Post
-        assert not Post.objects.filter(id=post_id).exists()
+        # Verificar que el producto también se eliminó
+        from apps.posts.models import Product
+        assert not Product.objects.filter(id=product_id).exists()
 
 
 # Ejecutar este test:

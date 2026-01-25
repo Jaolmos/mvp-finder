@@ -16,11 +16,11 @@ api = NinjaAPI(
 )
 
 # Registrar routers de las apps
-from apps.posts.api import router as posts_router
+from apps.posts.api import router as products_router
 from apps.topics.api import router as topics_router
 from apps.scraper.api import router as scraper_router
 
-api.add_router("/posts", posts_router)
+api.add_router("/products", products_router)
 api.add_router("/topics", topics_router)
 api.add_router("/scraper", scraper_router)
 

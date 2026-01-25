@@ -10,7 +10,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.topics.models import Topic
-from apps.posts.models import Post
+from apps.posts.models import Product
 
 User = get_user_model()
 
@@ -83,11 +83,11 @@ def inactive_topic(db):
 
 
 @pytest.fixture
-def post(topic):
+def product(topic):
     """
-    Fixture que crea un post de prueba sin analizar.
+    Fixture que crea un producto de prueba sin analizar.
     """
-    return Post.objects.create(
+    return Product.objects.create(
         external_id='ph_test001',
         topic=topic,
         title='AI Code Assistant',
@@ -105,11 +105,11 @@ def post(topic):
 
 
 @pytest.fixture
-def analyzed_post(topic):
+def analyzed_product(topic):
     """
-    Fixture que crea un post analizado por IA.
+    Fixture que crea un producto analizado por IA.
     """
-    return Post.objects.create(
+    return Product.objects.create(
         external_id='ph_test002',
         topic=topic,
         title='FocusFlow - Productivity Timer',
