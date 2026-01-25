@@ -4,7 +4,7 @@ Tests para el analizador IA con Ollama.
 import pytest
 from unittest.mock import patch, Mock, MagicMock
 
-from apps.scraper.ai_analyzer import OllamaClient, PostAnalyzer, AnalysisResult
+from apps.scraper.ai_analyzer import OllamaClient, ProductAnalyzer, AnalysisResult
 
 
 class TestOllamaClient:
@@ -124,8 +124,8 @@ class TestOllamaClient:
         assert 'ready' in status
 
 
-class TestPostAnalyzer:
-    """Tests para PostAnalyzer."""
+class TestProductAnalyzer:
+    """Tests para ProductAnalyzer."""
 
     def setup_method(self):
         """Reset singleton antes de cada test."""
@@ -138,7 +138,7 @@ class TestPostAnalyzer:
     def test_parse_response_valid_json(self):
         """Test: _parse_response parsea JSON válido correctamente."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         json_response = '''{
             "summary": "AI coding assistant",
@@ -162,7 +162,7 @@ class TestPostAnalyzer:
     def test_parse_response_with_markdown(self):
         """Test: _parse_response extrae JSON de respuesta con markdown."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         response = '''Here is the analysis:
         {"summary": "Test", "problem": "Problem", "mvp_idea": "Idea", "target_audience": "Users", "potential_score": 5, "tags": ["test"]}
@@ -176,7 +176,7 @@ class TestPostAnalyzer:
     def test_parse_response_clamps_score(self):
         """Test: _parse_response limita potential_score entre 1 y 10."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         # Score demasiado alto
         high_score_json = '{"summary": "Test", "problem": "P", "mvp_idea": "I", "target_audience": "T", "potential_score": 15, "tags": []}'
@@ -191,7 +191,7 @@ class TestPostAnalyzer:
     def test_parse_response_handles_string_tags(self):
         """Test: _parse_response convierte tags string a lista."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         json_response = '{"summary": "Test", "problem": "P", "mvp_idea": "I", "target_audience": "T", "potential_score": 5, "tags": "ai, coding, test"}'
 
@@ -203,7 +203,7 @@ class TestPostAnalyzer:
     def test_parse_response_normalizes_tags(self):
         """Test: _parse_response normaliza tags a lowercase sin espacios."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         json_response = '{"summary": "Test", "problem": "P", "mvp_idea": "I", "target_audience": "T", "potential_score": 5, "tags": ["AI Tools", "Machine Learning"]}'
 
@@ -214,46 +214,46 @@ class TestPostAnalyzer:
     def test_parse_response_invalid_json(self):
         """Test: _parse_response retorna None con JSON inválido."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         result = analyzer._parse_response("This is not JSON at all")
 
         assert result is None
 
     @pytest.mark.django_db
-    def test_analyze_post(self, post):
-        """Test: analyze_post genera prompt y parsea respuesta."""
+    def test_analyze_product(self, product):
+        """Test: analyze_product genera prompt y parsea respuesta."""
         mock_client = Mock()
         mock_client.generate.return_value = '{"summary": "Test", "problem": "P", "mvp_idea": "I", "target_audience": "T", "potential_score": 7, "tags": ["test"]}'
 
-        analyzer = PostAnalyzer(mock_client)
-        result = analyzer.analyze_post(post)
+        analyzer = ProductAnalyzer(mock_client)
+        result = analyzer.analyze_product(product)
 
         assert result is not None
         assert result.summary == "Test"
         assert result.potential_score == 7
 
-        # Verificar que se llamó a generate con prompt que incluye datos del post
+        # Verificar que se llamó a generate con prompt que incluye datos del producto
         call_args = mock_client.generate.call_args[0][0]
-        assert post.title in call_args
-        assert post.tagline in call_args
+        assert product.title in call_args
+        assert product.tagline in call_args
 
     @pytest.mark.django_db
-    def test_analyze_post_no_response(self, post):
-        """Test: analyze_post retorna None si Ollama no responde."""
+    def test_analyze_product_no_response(self, product):
+        """Test: analyze_product retorna None si Ollama no responde."""
         mock_client = Mock()
         mock_client.generate.return_value = None
 
-        analyzer = PostAnalyzer(mock_client)
-        result = analyzer.analyze_post(post)
+        analyzer = ProductAnalyzer(mock_client)
+        result = analyzer.analyze_product(product)
 
         assert result is None
 
     @pytest.mark.django_db
-    def test_update_post_with_analysis(self, post):
-        """Test: update_post_with_analysis actualiza campos del post."""
+    def test_update_product_with_analysis(self, product):
+        """Test: update_product_with_analysis actualiza campos del producto."""
         mock_client = Mock()
-        analyzer = PostAnalyzer(mock_client)
+        analyzer = ProductAnalyzer(mock_client)
 
         result = AnalysisResult(
             summary="Test summary",
@@ -264,23 +264,23 @@ class TestPostAnalyzer:
             tags=["tag1", "tag2"]
         )
 
-        analyzer.update_post_with_analysis(post, result)
+        analyzer.update_product_with_analysis(product, result)
 
         # Recargar desde DB
-        post.refresh_from_db()
+        product.refresh_from_db()
 
-        assert post.summary == "Test summary"
-        assert post.problem == "Test problem"
-        assert post.mvp_idea == "Test MVP idea"
-        assert post.target_audience == "Test audience"
-        assert post.potential_score == 8
-        assert post.tags == "tag1,tag2"
-        assert post.analyzed is True
-        assert post.analyzed_at is not None
+        assert product.summary == "Test summary"
+        assert product.problem == "Test problem"
+        assert product.mvp_idea == "Test MVP idea"
+        assert product.target_audience == "Test audience"
+        assert product.potential_score == 8
+        assert product.tags == "tag1,tag2"
+        assert product.analyzed is True
+        assert product.analyzed_at is not None
 
 
 @pytest.mark.django_db
-class TestAnalyzePostsAPI:
+class TestAnalyzeProductsAPI:
     """Tests para endpoints de análisis IA."""
 
     @pytest.fixture
@@ -289,7 +289,7 @@ class TestAnalyzePostsAPI:
         api_client.headers = {"Authorization": f"Bearer {access_token}"}
         return api_client
 
-    @patch('apps.scraper.api.analyze_posts.delay')
+    @patch('apps.scraper.api.analyze_products.delay')
     def test_analyze_endpoint(self, mock_task, scraper_client):
         """Test: Endpoint para iniciar análisis."""
         mock_task.return_value = Mock(id='analyze-123')
@@ -301,20 +301,20 @@ class TestAnalyzePostsAPI:
         assert data['task_id'] == 'analyze-123'
         assert data['status'] == 'processing'
 
-        mock_task.assert_called_once_with(post_ids=None, limit=5)
+        mock_task.assert_called_once_with(product_ids=None, limit=5)
 
-    @patch('apps.scraper.api.analyze_posts.delay')
-    def test_analyze_specific_posts(self, mock_task, scraper_client, post):
-        """Test: Endpoint para analizar posts específicos."""
+    @patch('apps.scraper.api.analyze_products.delay')
+    def test_analyze_specific_products(self, mock_task, scraper_client, product):
+        """Test: Endpoint para analizar productos específicos."""
         mock_task.return_value = Mock(id='analyze-456')
 
         response = scraper_client.post(
             "/scraper/analyze/",
-            json={"post_ids": [post.id], "limit": 10}
+            json={"product_ids": [product.id], "limit": 10}
         )
 
         assert response.status_code == 200
-        mock_task.assert_called_once_with(post_ids=[post.id], limit=10)
+        mock_task.assert_called_once_with(product_ids=[product.id], limit=10)
 
     @patch('apps.scraper.api.OllamaClient')
     def test_ollama_status_endpoint(self, mock_client_class, scraper_client):

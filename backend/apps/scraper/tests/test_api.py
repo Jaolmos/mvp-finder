@@ -16,8 +16,8 @@ def scraper_client(api_client, access_token):
 class TestScraperAPI:
     """Tests para endpoints del scraper de Product Hunt."""
 
-    @patch('apps.scraper.api.sync_posts.delay')
-    def test_sync_posts_all_topics(self, mock_task, scraper_client):
+    @patch('apps.scraper.api.sync_products.delay')
+    def test_sync_products_all_topics(self, mock_task, scraper_client):
         """Test: Endpoint para sincronizar todos los topics."""
         # Setup mock
         mock_task.return_value = Mock(id='task-123')
@@ -41,8 +41,8 @@ class TestScraperAPI:
             limit=50,
         )
 
-    @patch('apps.scraper.api.sync_posts.delay')
-    def test_sync_posts_specific_topics(self, mock_task, scraper_client, topic):
+    @patch('apps.scraper.api.sync_products.delay')
+    def test_sync_products_specific_topics(self, mock_task, scraper_client, topic):
         """Test: Endpoint para sincronizar topics específicos."""
         # Setup mock
         mock_task.return_value = Mock(id='task-456')
@@ -67,7 +67,7 @@ class TestScraperAPI:
             limit=100,
         )
 
-    def test_sync_posts_requires_auth(self, api_client):
+    def test_sync_products_requires_auth(self, api_client):
         """Test: Endpoint requiere autenticación."""
         # Execute
         response = api_client.post("/scraper/sync/", json={})

@@ -8,7 +8,7 @@ from datetime import datetime
 from apps.scraper.scraper import ProductHuntScraper
 from apps.scraper.producthunt_client import ProductHuntClient
 from apps.topics.models import Topic
-from apps.posts.models import Post
+from apps.posts.models import Product
 
 
 @pytest.fixture
@@ -57,13 +57,13 @@ class TestProductHuntScraper:
         scraper = ProductHuntScraper()
         assert scraper.client is not None
 
-    def test_scrape_topic_creates_new_posts(
+    def test_scrape_topic_creates_new_products(
         self,
         mock_ph_client,
         mock_ph_response,
         topic
     ):
-        """Test: Scraping crea posts nuevos."""
+        """Test: Scraping crea productos nuevos."""
         # Setup
         mock_ph_client.fetch_posts.return_value = mock_ph_response
         scraper = ProductHuntScraper()
@@ -72,27 +72,27 @@ class TestProductHuntScraper:
         result = scraper.scrape_topic(topic.name, limit=10)
 
         # Assert
-        assert result['new_posts'] == 1
-        assert result['skipped_posts'] == 0
+        assert result['new_products'] == 1
+        assert result['skipped_products'] == 0
         assert len(result['errors']) == 0
-        assert Post.objects.count() == 1
+        assert Product.objects.count() == 1
 
-        # Verificar el post creado
-        post = Post.objects.first()
-        assert post.external_id == "ph_test123"
-        assert post.title == "Test Product"
-        assert post.topic == topic
+        # Verificar el producto creado
+        product = Product.objects.first()
+        assert product.external_id == "ph_test123"
+        assert product.title == "Test Product"
+        assert product.topic == topic
 
     def test_scrape_topic_skips_duplicates(
         self,
         mock_ph_client,
         mock_ph_response,
         topic,
-        post
+        product
     ):
-        """Test: Scraping omite posts duplicados."""
+        """Test: Scraping omite productos duplicados."""
         # Setup - modificar mock para usar el mismo external_id
-        mock_ph_response['edges'][0]['node']['id'] = post.external_id
+        mock_ph_response['edges'][0]['node']['id'] = product.external_id
         mock_ph_client.fetch_posts.return_value = mock_ph_response
         scraper = ProductHuntScraper()
 
@@ -100,9 +100,9 @@ class TestProductHuntScraper:
         result = scraper.scrape_topic(topic.name, limit=10)
 
         # Assert
-        assert result['new_posts'] == 0
-        assert result['skipped_posts'] == 1
-        assert Post.objects.count() == 1  # No se creó uno nuevo
+        assert result['new_products'] == 0
+        assert result['skipped_products'] == 1
+        assert Product.objects.count() == 1  # No se creó uno nuevo
 
     def test_scrape_topic_nonexistent(self, mock_ph_client):
         """Test: Scraping de topic que no existe en BD."""
@@ -112,8 +112,8 @@ class TestProductHuntScraper:
         result = scraper.scrape_topic("nonexistent-topic", limit=10)
 
         # Assert
-        assert result['new_posts'] == 0
-        assert result['skipped_posts'] == 0
+        assert result['new_products'] == 0
+        assert result['skipped_products'] == 0
         assert len(result['errors']) == 1
         assert "no existe en BD" in result['errors'][0]
 
@@ -151,7 +151,7 @@ class TestProductHuntScraper:
                 'edges': [{
                     'cursor': 'cursor123',
                     'node': {
-                        'id': f'ph_{topic_name}_post123',
+                        'id': f'ph_{topic_name}_product123',
                         'name': f'Test Product from {topic_name}',
                         'tagline': 'A great product',
                         'description': 'Test content',
@@ -177,7 +177,7 @@ class TestProductHuntScraper:
 
         # Assert
         assert len(results) == 2
-        assert Post.objects.count() == 2
+        assert Product.objects.count() == 2
 
     def test_scrape_all_skips_inactive_topics(
         self,
@@ -198,12 +198,12 @@ class TestProductHuntScraper:
         # Assert
         assert len(results) == 0  # No debería procesar ninguno
 
-    def test_create_post_from_node(
+    def test_create_product_from_node(
         self,
         mock_ph_client,
         topic
     ):
-        """Test: Creación de post desde nodo de Product Hunt."""
+        """Test: Creación de producto desde nodo de Product Hunt."""
         scraper = ProductHuntScraper()
 
         node = {
@@ -220,19 +220,19 @@ class TestProductHuntScraper:
         }
 
         # Execute
-        post = scraper._create_post_from_node(node, topic)
+        product = scraper._create_product_from_node(node, topic)
 
         # Assert
-        assert post is not None
-        assert post.external_id == "ph_node123"
-        assert post.title == "Test Node Product"
-        assert post.tagline == "Test tagline"
-        assert post.author == "nodemaker"
-        assert post.score == 200
-        assert post.topic == topic
+        assert product is not None
+        assert product.external_id == "ph_node123"
+        assert product.title == "Test Node Product"
+        assert product.tagline == "Test tagline"
+        assert product.author == "nodemaker"
+        assert product.score == 200
+        assert product.topic == topic
 
-    def test_create_post_from_node_no_makers(self, mock_ph_client, topic):
-        """Test: Creación de post sin makers."""
+    def test_create_product_from_node_no_makers(self, mock_ph_client, topic):
+        """Test: Creación de producto sin makers."""
         scraper = ProductHuntScraper()
 
         node = {
@@ -249,14 +249,14 @@ class TestProductHuntScraper:
         }
 
         # Execute
-        post = scraper._create_post_from_node(node, topic)
+        product = scraper._create_product_from_node(node, topic)
 
         # Assert
-        assert post is not None
-        assert post.author == "unknown"
+        assert product is not None
+        assert product.author == "unknown"
 
-    def test_create_post_from_node_no_description(self, mock_ph_client, topic):
-        """Test: Creación de post sin description (usa tagline)."""
+    def test_create_product_from_node_no_description(self, mock_ph_client, topic):
+        """Test: Creación de producto sin description (usa tagline)."""
         scraper = ProductHuntScraper()
 
         node = {
@@ -273,19 +273,19 @@ class TestProductHuntScraper:
         }
 
         # Execute
-        post = scraper._create_post_from_node(node, topic)
+        product = scraper._create_product_from_node(node, topic)
 
         # Assert
-        assert post is not None
-        assert post.content == "Just a tagline"
+        assert product is not None
+        assert product.content == "Just a tagline"
 
     def test_get_scraping_summary(self, mock_ph_client):
         """Test: Generación de resumen de scraping."""
         scraper = ProductHuntScraper()
 
         results = [
-            {'topic': 'artificial-intelligence', 'new_posts': 5, 'skipped_posts': 2, 'errors': []},
-            {'topic': 'productivity', 'new_posts': 3, 'skipped_posts': 1, 'errors': ['error1']},
+            {'topic': 'artificial-intelligence', 'new_products': 5, 'skipped_products': 2, 'errors': []},
+            {'topic': 'productivity', 'new_products': 3, 'skipped_products': 1, 'errors': ['error1']},
         ]
 
         # Execute
@@ -293,8 +293,8 @@ class TestProductHuntScraper:
 
         # Assert
         assert summary['topics_processed'] == 2
-        assert summary['total_new_posts'] == 8
-        assert summary['total_skipped_posts'] == 3
+        assert summary['total_new_products'] == 8
+        assert summary['total_skipped_products'] == 3
         assert summary['total_errors'] == 1
         assert len(summary['details']) == 2
 
