@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Post } from '@/services/posts'
+import type { Product } from '@/services/products'
 
 const props = defineProps<{
-  post: Post
+  product: Product
 }>()
 
 const emit = defineEmits<{
@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const formattedDate = computed(() => {
-  const date = new Date(props.post.created_at_source)
+  const date = new Date(props.product.created_at_source)
   return date.toLocaleDateString('es-ES', {
     month: 'short',
     day: 'numeric'
@@ -21,7 +21,7 @@ const formattedDate = computed(() => {
 
 // Color del badge de score según valor
 const scoreColorClass = computed(() => {
-  const score = props.post.score
+  const score = props.product.score
   if (score >= 100) return 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/20'
   if (score >= 50) return 'bg-amber-500/15 text-amber-400 ring-amber-500/20'
   return 'bg-dark-600 text-dark-300 ring-dark-500/20'
@@ -29,11 +29,11 @@ const scoreColorClass = computed(() => {
 
 const handleToggleFavorite = (e: Event) => {
   e.stopPropagation()
-  emit('toggleFavorite', props.post.id)
+  emit('toggleFavorite', props.product.id)
 }
 
 const handleClick = () => {
-  emit('click', props.post.id)
+  emit('click', props.product.id)
 }
 </script>
 
@@ -53,7 +53,7 @@ const handleClick = () => {
         <h3
           class="text-[15px] font-semibold text-dark-100 leading-snug tracking-tight transition-colors duration-200 group-hover:text-white line-clamp-2"
         >
-          {{ post.title }}
+          {{ product.title }}
         </h3>
       </div>
 
@@ -62,17 +62,17 @@ const handleClick = () => {
         @click="handleToggleFavorite"
         class="shrink-0 p-1.5 -m-1.5 rounded-lg transition-all duration-200"
         :class="
-          post.is_favorite
+          product.is_favorite
             ? 'text-accent-400 hover:text-accent-300 hover:bg-accent-500/10'
             : 'text-dark-500 opacity-0 group-hover:opacity-100 hover:text-accent-400 hover:bg-dark-700'
         "
-        :title="post.is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+        :title="product.is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5 transition-transform duration-200"
-          :class="post.is_favorite ? 'scale-100' : 'scale-90 group-hover:scale-100'"
-          :fill="post.is_favorite ? 'currentColor' : 'none'"
+          :class="product.is_favorite ? 'scale-100' : 'scale-90 group-hover:scale-100'"
+          :fill="product.is_favorite ? 'currentColor' : 'none'"
           viewBox="0 0 24 24"
           stroke="currentColor"
           stroke-width="2"
@@ -88,10 +88,10 @@ const handleClick = () => {
 
     <!-- Tagline -->
     <p
-      v-if="post.tagline"
+      v-if="product.tagline"
       class="text-sm text-dark-400 leading-relaxed mb-3 line-clamp-1"
     >
-      {{ post.tagline }}
+      {{ product.tagline }}
     </p>
 
     <!-- Meta row: Topic + Author -->
@@ -102,10 +102,10 @@ const handleClick = () => {
         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
         </svg>
-        {{ post.topic.name }}
+        {{ product.topic.name }}
       </span>
       <span class="text-dark-600">·</span>
-      <span class="truncate">{{ post.author }}</span>
+      <span class="truncate">{{ product.author }}</span>
     </div>
 
     <!-- Footer: Score + Date + Analyzed -->
@@ -119,7 +119,7 @@ const handleClick = () => {
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
           </svg>
-          {{ post.score }}
+          {{ product.score }}
         </span>
 
         <!-- Date -->
@@ -128,7 +128,7 @@ const handleClick = () => {
 
       <!-- Analyzed badge -->
       <div
-        v-if="post.analyzed"
+        v-if="product.analyzed"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary-500/10 text-secondary-400 text-xs font-medium"
       >
         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
