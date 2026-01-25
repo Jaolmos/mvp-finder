@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import PostDetailView from '../PostDetailView.vue'
-import { usePostsStore } from '@/stores/posts'
+import ProductDetailView from '../ProductDetailView.vue'
+import { useProductsStore } from '@/stores/products'
 import { scraperService } from '@/services'
-import type { PostDetail } from '@/services/posts'
+import type { ProductDetail } from '@/services/products'
 
 // Mock de AppLayout
 vi.mock('@/layouts/AppLayout.vue', () => ({
@@ -19,20 +19,20 @@ vi.mock('@/layouts/AppLayout.vue', () => ({
 vi.mock('@/services', () => ({
   scraperService: {
     getOllamaStatus: vi.fn(),
-    analyzePosts: vi.fn()
+    analyzeProducts: vi.fn()
   }
 }))
 
 // Mock de las rutas
 const routes = [
-  { path: '/posts/:id', name: 'post-detail', component: PostDetailView },
-  { path: '/posts', name: 'posts', component: { template: '<div>Posts</div>' } }
+  { path: '/products/:id', name: 'product-detail', component: ProductDetailView },
+  { path: '/products', name: 'products', component: { template: '<div>Products</div>' } }
 ]
 
-describe('PostDetailView', () => {
+describe('ProductDetailView', () => {
   let router: ReturnType<typeof createRouter>
 
-  const mockPost: PostDetail = {
+  const mockProduct: ProductDetail = {
     id: 1,
     external_id: 'ph-123',
     title: 'Test Product',
@@ -57,8 +57,8 @@ describe('PostDetailView', () => {
     analyzed_at: null
   }
 
-  const mockAnalyzedPost: PostDetail = {
-    ...mockPost,
+  const mockAnalyzedProduct: ProductDetail = {
+    ...mockProduct,
     analyzed: true,
     summary: 'Este es un resumen del producto',
     problem: 'Resuelve el problema de testing',
@@ -93,23 +93,23 @@ describe('PostDetailView', () => {
     vi.clearAllMocks()
   })
 
-  async function mountPostDetailView(
+  async function mountProductDetailView(
     initialState = {},
     ollamaStatus = mockOllamaReady
   ) {
     vi.mocked(scraperService.getOllamaStatus).mockResolvedValue(ollamaStatus)
 
-    await router.push('/posts/1')
+    await router.push('/products/1')
     await router.isReady()
 
-    const wrapper = mount(PostDetailView, {
+    const wrapper = mount(ProductDetailView, {
       global: {
         plugins: [
           router,
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
-              posts: initialState
+              products: initialState
             }
           })
         ]
@@ -122,35 +122,35 @@ describe('PostDetailView', () => {
 
   describe('Renderizado básico', () => {
     it('muestra spinner de carga cuando loading es true', async () => {
-      const wrapper = await mountPostDetailView({ loading: true })
+      const wrapper = await mountProductDetailView({ loading: true })
 
       expect(wrapper.find('.animate-spin').exists()).toBe(true)
     })
 
     it('muestra error cuando hay error en el store', async () => {
-      const wrapper = await mountPostDetailView({ error: 'Post no encontrado' })
+      const wrapper = await mountProductDetailView({ error: 'Producto no encontrado' })
 
-      expect(wrapper.text()).toContain('Error al cargar el post')
-      expect(wrapper.text()).toContain('Post no encontrado')
+      expect(wrapper.text()).toContain('Error al cargar el producto')
+      expect(wrapper.text()).toContain('Producto no encontrado')
     })
 
-    it('muestra el título del post', async () => {
-      const wrapper = await mountPostDetailView({ currentPost: mockPost })
+    it('muestra el título del producto', async () => {
+      const wrapper = await mountProductDetailView({ currentProduct: mockProduct })
 
       expect(wrapper.find('h1').text()).toBe('Test Product')
     })
 
-    it('muestra botón "Volver a posts"', async () => {
-      const wrapper = await mountPostDetailView({ currentPost: mockPost })
+    it('muestra botón "Volver a productos"', async () => {
+      const wrapper = await mountProductDetailView({ currentProduct: mockProduct })
 
-      expect(wrapper.text()).toContain('Volver a posts')
+      expect(wrapper.text()).toContain('Volver a productos')
     })
   })
 
-  describe('Análisis IA - Post no analizado', () => {
-    it('muestra card de análisis cuando post no está analizado y Ollama está listo', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+  describe('Análisis IA - Producto no analizado', () => {
+    it('muestra card de análisis cuando producto no está analizado y Ollama está listo', async () => {
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -159,8 +159,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra botón "Analizar con IA" cuando Ollama está listo', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -172,8 +172,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra "Modelo no disponible" cuando Ollama no está listo', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaNotReady
       )
 
@@ -182,8 +182,8 @@ describe('PostDetailView', () => {
     })
 
     it('no muestra botón "Analizar con IA" cuando Ollama no está listo', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaNotReady
       )
 
@@ -194,10 +194,10 @@ describe('PostDetailView', () => {
     })
   })
 
-  describe('Análisis IA - Post ya analizado', () => {
-    it('no muestra card de "Analizar con IA" cuando post ya está analizado', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+  describe('Análisis IA - Producto ya analizado', () => {
+    it('no muestra card de "Analizar con IA" cuando producto ya está analizado', async () => {
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -208,8 +208,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra sección de análisis completado con resumen', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -218,8 +218,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra problema que resuelve', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -228,8 +228,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra idea de MVP', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -238,8 +238,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra público objetivo', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -248,8 +248,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra score de potencial con color verde para score >= 7', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -258,8 +258,8 @@ describe('PostDetailView', () => {
     })
 
     it('muestra tags separados', async () => {
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockAnalyzedPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
         mockOllamaReady
       )
 
@@ -271,14 +271,14 @@ describe('PostDetailView', () => {
   })
 
   describe('Interacción de análisis', () => {
-    it('llama a scraperService.analyzePosts al hacer click en "Analizar con IA"', async () => {
-      vi.mocked(scraperService.analyzePosts).mockResolvedValue({
+    it('llama a scraperService.analyzeProducts al hacer click en "Analizar con IA"', async () => {
+      vi.mocked(scraperService.analyzeProducts).mockResolvedValue({
         task_id: 'task-123',
         message: 'Análisis iniciado'
       })
 
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -288,17 +288,17 @@ describe('PostDetailView', () => {
       await analyzeBtn?.trigger('click')
       await flushPromises()
 
-      expect(scraperService.analyzePosts).toHaveBeenCalledWith({ post_ids: [1] })
+      expect(scraperService.analyzeProducts).toHaveBeenCalledWith({ product_ids: [1] })
     })
 
     it('muestra "Analizando..." mientras se procesa', async () => {
-      vi.mocked(scraperService.analyzePosts).mockResolvedValue({
+      vi.mocked(scraperService.analyzeProducts).mockResolvedValue({
         task_id: 'task-123',
         message: 'Análisis iniciado'
       })
 
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -312,13 +312,13 @@ describe('PostDetailView', () => {
     })
 
     it('deshabilita botón mientras analiza', async () => {
-      vi.mocked(scraperService.analyzePosts).mockResolvedValue({
+      vi.mocked(scraperService.analyzeProducts).mockResolvedValue({
         task_id: 'task-123',
         message: 'Análisis iniciado'
       })
 
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -334,12 +334,12 @@ describe('PostDetailView', () => {
     })
 
     it('muestra error si falla el análisis', async () => {
-      vi.mocked(scraperService.analyzePosts).mockRejectedValue({
+      vi.mocked(scraperService.analyzeProducts).mockRejectedValue({
         response: { data: { message: 'Error de conexión con Ollama' } }
       })
 
-      const wrapper = await mountPostDetailView(
-        { currentPost: mockPost },
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockProduct },
         mockOllamaReady
       )
 
@@ -355,7 +355,7 @@ describe('PostDetailView', () => {
 
   describe('Carga de estado de Ollama', () => {
     it('llama a scraperService.getOllamaStatus al montar', async () => {
-      await mountPostDetailView({ currentPost: mockPost })
+      await mountProductDetailView({ currentProduct: mockProduct })
 
       expect(scraperService.getOllamaStatus).toHaveBeenCalled()
     })
@@ -363,17 +363,17 @@ describe('PostDetailView', () => {
     it('no muestra card de análisis si ollamaStatus es null', async () => {
       vi.mocked(scraperService.getOllamaStatus).mockRejectedValue(new Error('Network error'))
 
-      await router.push('/posts/1')
+      await router.push('/products/1')
       await router.isReady()
 
-      const wrapper = mount(PostDetailView, {
+      const wrapper = mount(ProductDetailView, {
         global: {
           plugins: [
             router,
             createTestingPinia({
               createSpy: vi.fn,
               initialState: {
-                posts: { currentPost: mockPost }
+                products: { currentProduct: mockProduct }
               }
             })
           ]
@@ -392,7 +392,7 @@ describe('PostDetailView', () => {
 })
 
 // Ejecutar este test:
-//   cd frontend && npm run test:unit -- --run src/views/__tests__/PostDetailView.spec.ts
+//   cd frontend && npm run test:unit -- --run src/views/__tests__/ProductDetailView.spec.ts
 //
 // Ejecutar todos los tests:
 //   cd frontend && npm run test:unit

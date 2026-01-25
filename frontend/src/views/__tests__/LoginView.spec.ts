@@ -181,7 +181,7 @@ describe('LoginView', () => {
   })
 
   it('redirige a la URL de redirect si existe', async () => {
-    await router.push('/login?redirect=/posts')
+    await router.push('/login?redirect=/products')
     await router.isReady()
 
     const wrapper = mount(LoginView, {
@@ -204,7 +204,7 @@ describe('LoginView', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(router.currentRoute.value.path).toBe('/posts')
+    expect(router.currentRoute.value.path).toBe('/products')
   })
 })
 
