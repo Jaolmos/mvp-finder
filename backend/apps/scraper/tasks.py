@@ -7,13 +7,13 @@ from typing import List, Optional
 import logging
 
 from .scraper import ProductHuntScraper
-from .ai_analyzer import OllamaClient, PostAnalyzer
+from .ai_analyzer import OllamaClient, ProductAnalyzer
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='scraper.sync_posts')
-def sync_posts(
+@shared_task(name='scraper.sync_products')
+def sync_products(
     topic_ids: Optional[List[int]] = None,
     limit: int = 50,
 ) -> dict:
@@ -28,7 +28,7 @@ def sync_posts(
     Returns:
         Dict con resumen de la sincronización
     """
-    logger.info(f"Iniciando sincronización de posts. Topics: {topic_ids or 'todos'}")
+    logger.info(f"Iniciando sincronización de productos. Topics: {topic_ids or 'todos'}")
 
     try:
         scraper = ProductHuntScraper()
@@ -50,8 +50,8 @@ def sync_posts(
                     logger.warning(f"Topic con ID {topic_id} no existe o no está activo")
                     results.append({
                         'topic': f'ID:{topic_id}',
-                        'new_posts': 0,
-                        'skipped_posts': 0,
+                        'new_products': 0,
+                        'skipped_products': 0,
                         'errors': ['Topic no encontrado o inactivo']
                     })
         else:
@@ -63,8 +63,8 @@ def sync_posts(
 
         logger.info(
             f"Sincronización completada. "
-            f"Nuevos posts: {summary['total_new_posts']}, "
-            f"Omitidos: {summary['total_skipped_posts']}, "
+            f"Nuevos productos: {summary['total_new_products']}, "
+            f"Omitidos: {summary['total_skipped_products']}, "
             f"Errores: {summary['total_errors']}"
         )
 
@@ -74,7 +74,7 @@ def sync_posts(
         }
 
     except Exception as e:
-        logger.error(f"Error en sincronización de posts: {str(e)}", exc_info=True)
+        logger.error(f"Error en sincronización de productos: {str(e)}", exc_info=True)
         return {
             'status': 'error',
             'error': str(e)
@@ -106,22 +106,22 @@ def test_connection() -> dict:
         return {'status': 'error', 'error': str(e)}
 
 
-@shared_task(name='scraper.analyze_posts')
-def analyze_posts(post_ids: Optional[List[int]] = None, limit: int = 10) -> dict:
+@shared_task(name='scraper.analyze_products')
+def analyze_products(product_ids: Optional[List[int]] = None, limit: int = 10) -> dict:
     """
-    Tarea Celery para analizar posts con Ollama.
+    Tarea Celery para analizar productos con Ollama.
 
     Args:
-        post_ids: Lista de IDs específicos a analizar.
-                  Si es None, analiza posts no analizados.
-        limit: Número máximo de posts a analizar (default: 10)
+        product_ids: Lista de IDs específicos a analizar.
+                     Si es None, analiza productos no analizados.
+        limit: Número máximo de productos a analizar (default: 10)
 
     Returns:
         Dict con resumen del análisis
     """
-    from apps.posts.models import Post
+    from apps.posts.models import Product
 
-    logger.info(f"Iniciando análisis de posts. IDs: {post_ids or 'no analizados'}, limit: {limit}")
+    logger.info(f"Iniciando análisis de productos. IDs: {product_ids or 'no analizados'}, limit: {limit}")
 
     try:
         client = OllamaClient.get_client()
@@ -139,32 +139,32 @@ def analyze_posts(post_ids: Optional[List[int]] = None, limit: int = 10) -> dict
                 'error': f'Modelo {client.model} no está descargado. Usa /api/scraper/pull-model/ primero.'
             }
 
-        analyzer = PostAnalyzer(client)
+        analyzer = ProductAnalyzer(client)
 
-        # Seleccionar posts a analizar
-        if post_ids:
-            posts = Post.objects.filter(id__in=post_ids)
+        # Seleccionar productos a analizar
+        if product_ids:
+            products = Product.objects.filter(id__in=product_ids)
         else:
-            posts = Post.objects.filter(analyzed=False)[:limit]
+            products = Product.objects.filter(analyzed=False)[:limit]
 
         analyzed = 0
         failed = 0
         errors = []
 
-        for post in posts:
+        for product in products:
             try:
-                result = analyzer.analyze_post(post)
+                result = analyzer.analyze_product(product)
                 if result:
-                    analyzer.update_post_with_analysis(post, result)
+                    analyzer.update_product_with_analysis(product, result)
                     analyzed += 1
-                    logger.info(f"Post {post.id} analizado correctamente")
+                    logger.info(f"Producto {product.id} analizado correctamente")
                 else:
                     failed += 1
-                    errors.append(f"Post {post.id}: Sin respuesta de Ollama")
+                    errors.append(f"Producto {product.id}: Sin respuesta de Ollama")
             except Exception as e:
                 failed += 1
-                errors.append(f"Post {post.id}: {str(e)}")
-                logger.error(f"Error al analizar post {post.id}: {e}")
+                errors.append(f"Producto {product.id}: {str(e)}")
+                logger.error(f"Error al analizar producto {product.id}: {e}")
 
         logger.info(f"Análisis completado. Analizados: {analyzed}, Fallidos: {failed}")
 
@@ -176,7 +176,7 @@ def analyze_posts(post_ids: Optional[List[int]] = None, limit: int = 10) -> dict
         }
 
     except Exception as e:
-        logger.error(f"Error en análisis de posts: {str(e)}", exc_info=True)
+        logger.error(f"Error en análisis de productos: {str(e)}", exc_info=True)
         return {
             'status': 'error',
             'error': str(e)

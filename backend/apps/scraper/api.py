@@ -6,7 +6,7 @@ from ninja import Router, Schema
 from django.http import HttpRequest
 
 from config.auth import JWTAuth
-from .tasks import sync_posts, test_connection, analyze_posts, check_ollama, pull_ollama_model
+from .tasks import sync_products, test_connection, analyze_products, check_ollama, pull_ollama_model
 from .ai_analyzer import OllamaClient
 
 router = Router(tags=["Scraper"], auth=JWTAuth())
@@ -37,7 +37,7 @@ class TestConnectionResponseSchema(Schema):
 
 class AnalyzeRequestSchema(Schema):
     """Schema para request de análisis IA."""
-    post_ids: Optional[List[int]] = None
+    product_ids: Optional[List[int]] = None
     limit: int = 10
 
 
@@ -59,7 +59,7 @@ class OllamaStatusSchema(Schema):
     response={200: TaskResponseSchema},
     summary="Sincronizar productos de Product Hunt"
 )
-def sync_products(request: HttpRequest, payload: SyncRequestSchema = None):
+def sync_products_endpoint(request: HttpRequest, payload: SyncRequestSchema = None):
     """
     Inicia sincronización de productos de Product Hunt en background.
 
@@ -74,7 +74,7 @@ def sync_products(request: HttpRequest, payload: SyncRequestSchema = None):
         payload = SyncRequestSchema()
 
     # Lanzar tarea Celery
-    task = sync_posts.delay(
+    task = sync_products.delay(
         topic_ids=payload.topic_ids,
         limit=payload.limit,
     )
@@ -112,23 +112,23 @@ def test_producthunt_connection(request: HttpRequest):
 @router.post(
     "/analyze/",
     response={200: TaskResponseSchema},
-    summary="Analizar posts con IA"
+    summary="Analizar productos con IA"
 )
-def analyze_posts_endpoint(request: HttpRequest, payload: AnalyzeRequestSchema = None):
+def analyze_products_endpoint(request: HttpRequest, payload: AnalyzeRequestSchema = None):
     """
-    Inicia análisis de posts con Ollama en background.
+    Inicia análisis de productos con Ollama en background.
 
-    - Si `post_ids` está vacío o None: analiza posts no analizados
-    - Si `post_ids` tiene valores: analiza solo esos posts
-    - `limit`: número máximo de posts a analizar (default: 10)
+    - Si `product_ids` está vacío o None: analiza productos no analizados
+    - Si `product_ids` tiene valores: analiza solo esos productos
+    - `limit`: número máximo de productos a analizar (default: 10)
 
     Requiere que Ollama esté disponible y el modelo descargado.
     """
     if payload is None:
         payload = AnalyzeRequestSchema()
 
-    task = analyze_posts.delay(
-        post_ids=payload.post_ids,
+    task = analyze_products.delay(
+        product_ids=payload.product_ids,
         limit=payload.limit,
     )
 

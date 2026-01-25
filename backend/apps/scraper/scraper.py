@@ -7,7 +7,7 @@ from django.utils import timezone as django_timezone
 from dateutil import parser as date_parser
 
 from apps.topics.models import Topic
-from apps.posts.models import Post
+from apps.posts.models import Product
 from .producthunt_client import ProductHuntClient
 
 
@@ -39,8 +39,8 @@ class ProductHuntScraper:
         """
         results = {
             'topic': topic_name,
-            'new_posts': 0,
-            'skipped_posts': 0,
+            'new_products': 0,
+            'skipped_products': 0,
             'errors': []
         }
 
@@ -52,44 +52,44 @@ class ProductHuntScraper:
                 results['errors'].append(f"Topic '{topic_name}' no existe en BD")
                 return results
 
-            # Obtener posts del topic usando la API
+            # Obtener products del topic usando la API
             fetched = 0
             cursor = None
 
             while fetched < limit:
                 batch_limit = min(20, limit - fetched)
-                posts_data = self.client.fetch_posts(
+                products_data = self.client.fetch_posts(
                     topic_slug=topic_name,
                     limit=batch_limit,
                     cursor=cursor
                 )
 
-                edges = posts_data.get('edges', [])
+                edges = products_data.get('edges', [])
                 if not edges:
                     break
 
-                # Procesar cada post
+                # Procesar cada product
                 for edge in edges:
                     node = edge.get('node', {})
                     external_id = node.get('id')
 
-                    # Verificar si el post ya existe
-                    if Post.objects.filter(external_id=external_id).exists():
-                        results['skipped_posts'] += 1
+                    # Verificar si el product ya existe
+                    if Product.objects.filter(external_id=external_id).exists():
+                        results['skipped_products'] += 1
                         continue
 
-                    # Crear nuevo post
+                    # Crear nuevo product
                     try:
-                        post = self._create_post_from_node(node, topic_obj)
-                        if post:
-                            results['new_posts'] += 1
+                        product = self._create_product_from_node(node, topic_obj)
+                        if product:
+                            results['new_products'] += 1
                     except Exception as e:
-                        results['errors'].append(f"Error al crear post {external_id}: {str(e)}")
+                        results['errors'].append(f"Error al crear product {external_id}: {str(e)}")
 
                     fetched += 1
 
                 # Verificar si hay más páginas
-                page_info = posts_data.get('pageInfo', {})
+                page_info = products_data.get('pageInfo', {})
                 if not page_info.get('hasNextPage'):
                     break
                 cursor = page_info.get('endCursor')
@@ -130,20 +130,20 @@ class ProductHuntScraper:
 
         return results
 
-    def _create_post_from_node(
+    def _create_product_from_node(
         self,
         node: Dict[str, Any],
         topic_obj: Topic
-    ) -> Optional[Post]:
+    ) -> Optional[Product]:
         """
-        Crea un Post desde un nodo de la API de Product Hunt.
+        Crea un Product desde un nodo de la API de Product Hunt.
 
         Args:
             node: Nodo del producto de Product Hunt
             topic_obj: Instancia de Topic de Django
 
         Returns:
-            Post creado o None si hay error
+            Product creado o None si hay error
         """
         try:
             # Parsear fecha de creación
@@ -163,8 +163,8 @@ class ProductHuntScraper:
             description = node.get('description', '')
             content = description if description else tagline
 
-            # Crear post
-            post = Post.objects.create(
+            # Crear product
+            product = Product.objects.create(
                 external_id=node.get('id'),
                 topic=topic_obj,
                 title=node.get('name', ''),
@@ -179,10 +179,10 @@ class ProductHuntScraper:
                 created_at_source=created_at
             )
 
-            return post
+            return product
 
         except Exception as e:
-            print(f"Error al crear post desde node: {e}")
+            print(f"Error al crear product desde node: {e}")
             return None
 
     def get_scraping_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -195,15 +195,15 @@ class ProductHuntScraper:
         Returns:
             Dict con resumen general
         """
-        total_new = sum(r['new_posts'] for r in results)
-        total_skipped = sum(r['skipped_posts'] for r in results)
+        total_new = sum(r['new_products'] for r in results)
+        total_skipped = sum(r['skipped_products'] for r in results)
         total_errors = sum(len(r['errors']) for r in results)
         topics_processed = len(results)
 
         return {
             'topics_processed': topics_processed,
-            'total_new_posts': total_new,
-            'total_skipped_posts': total_skipped,
+            'total_new_products': total_new,
+            'total_skipped_products': total_skipped,
             'total_errors': total_errors,
             'details': results
         }

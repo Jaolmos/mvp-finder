@@ -1,5 +1,5 @@
 """
-Cliente Ollama para análisis IA de posts de Product Hunt.
+Cliente Ollama para análisis IA de productos de Product Hunt.
 Extrae información estructurada usando LLM local.
 """
 import os
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AnalysisResult:
-    """Resultado del análisis IA de un post."""
+    """Resultado del análisis IA de un producto."""
     summary: str
     problem: str
     mvp_idea: str
@@ -176,8 +176,8 @@ class OllamaClient:
         }
 
 
-class PostAnalyzer:
-    """Analizador de posts usando Ollama."""
+class ProductAnalyzer:
+    """Analizador de productos usando Ollama."""
 
     ANALYSIS_PROMPT = """Analiza este producto de Product Hunt. Responde EN ESPAÑOL con JSON válido.
 
@@ -201,25 +201,25 @@ JSON:"""
     def __init__(self, client: Optional[OllamaClient] = None):
         self.client = client or OllamaClient.get_client()
 
-    def analyze_post(self, post) -> Optional[AnalysisResult]:
+    def analyze_product(self, product) -> Optional[AnalysisResult]:
         """
-        Analiza un post y retorna resultado estructurado.
+        Analiza un producto y retorna resultado estructurado.
 
         Args:
-            post: Instancia de Post model
+            product: Instancia de Product model
 
         Returns:
             AnalysisResult o None si hay error
         """
         prompt = self.ANALYSIS_PROMPT.format(
-            title=post.title,
-            tagline=post.tagline or "",
-            content=post.content or "",
+            title=product.title,
+            tagline=product.tagline or "",
+            content=product.content or "",
         )
 
         response = self.client.generate(prompt)
         if not response:
-            logger.warning(f"Sin respuesta de Ollama para post {post.id}")
+            logger.warning(f"Sin respuesta de Ollama para producto {product.id}")
             return None
 
         return self._parse_response(response)
@@ -295,22 +295,22 @@ JSON:"""
 
         return json_str
 
-    def update_post_with_analysis(self, post, result: AnalysisResult) -> None:
+    def update_product_with_analysis(self, product, result: AnalysisResult) -> None:
         """
-        Actualiza un post con el resultado del análisis.
+        Actualiza un producto con el resultado del análisis.
 
         Args:
-            post: Instancia de Post model
+            product: Instancia de Product model
             result: Resultado del análisis
         """
         from django.utils import timezone
 
-        post.summary = result.summary
-        post.problem = result.problem
-        post.mvp_idea = result.mvp_idea
-        post.target_audience = result.target_audience
-        post.potential_score = result.potential_score
-        post.tags = ",".join(result.tags)
-        post.analyzed = True
-        post.analyzed_at = timezone.now()
-        post.save()
+        product.summary = result.summary
+        product.problem = result.problem
+        product.mvp_idea = result.mvp_idea
+        product.target_audience = result.target_audience
+        product.potential_score = result.potential_score
+        product.tags = ",".join(result.tags)
+        product.analyzed = True
+        product.analyzed_at = timezone.now()
+        product.save()
