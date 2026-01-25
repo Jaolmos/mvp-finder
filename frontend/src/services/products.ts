@@ -5,7 +5,7 @@ export interface Topic {
   name: string
 }
 
-export interface Post {
+export interface Product {
   id: number
   external_id: string
   topic: Topic
@@ -38,7 +38,7 @@ export interface Category {
   description: string
 }
 
-export interface PostFilters {
+export interface ProductFilters {
   topic?: number
   analyzed?: boolean
   min_score?: number
@@ -49,49 +49,49 @@ export interface PostFilters {
   page_size?: number
 }
 
-export interface PostListResponse {
+export interface ProductListResponse {
   count: number
-  items: Post[]
+  items: Product[]
 }
 
-export interface PostStats {
-  total_posts: number
-  analyzed_posts: number
+export interface ProductStats {
+  total_products: number
+  analyzed_products: number
   favorites_count: number
 }
 
-class PostService {
+class ProductService {
   /**
-   * Listar posts con filtros
+   * Listar productos con filtros
    */
-  async list(filters?: PostFilters): Promise<PostListResponse> {
-    const response = await api.get<PostListResponse>('/posts/', {
+  async list(filters?: ProductFilters): Promise<ProductListResponse> {
+    const response = await api.get<ProductListResponse>('/products/', {
       params: filters,
     })
     return response.data
   }
 
   /**
-   * Obtener detalle de un post
+   * Obtener detalle de un producto
    */
-  async get(id: number): Promise<Post> {
-    const response = await api.get<Post>(`/posts/${id}/`)
+  async get(id: number): Promise<Product> {
+    const response = await api.get<Product>(`/products/${id}/`)
     return response.data
   }
 
   /**
-   * Marcar/desmarcar post como favorito
+   * Marcar/desmarcar producto como favorito
    */
   async toggleFavorite(id: number): Promise<{ is_favorite: boolean }> {
-    const response = await api.post<{ is_favorite: boolean }>(`/posts/${id}/favorite/`)
+    const response = await api.post<{ is_favorite: boolean }>(`/products/${id}/favorite/`)
     return response.data
   }
 
   /**
-   * Eliminar un post
+   * Eliminar un producto
    */
   async delete(id: number): Promise<{ success: boolean; message: string }> {
-    const response = await api.delete<{ success: boolean; message: string }>(`/posts/${id}/`)
+    const response = await api.delete<{ success: boolean; message: string }>(`/products/${id}/`)
     return response.data
   }
 
@@ -104,12 +104,12 @@ class PostService {
   }
 
   /**
-   * Obtener estadísticas globales de posts
+   * Obtener estadísticas globales de productos
    */
-  async getStats(): Promise<PostStats> {
-    const response = await api.get<PostStats>('/posts/stats/')
+  async getStats(): Promise<ProductStats> {
+    const response = await api.get<ProductStats>('/products/stats/')
     return response.data
   }
 }
 
-export default new PostService()
+export default new ProductService()

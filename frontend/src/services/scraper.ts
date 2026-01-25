@@ -6,7 +6,7 @@ export interface SyncRequest {
 }
 
 export interface AnalyzeRequest {
-  post_ids?: number[]
+  product_ids?: number[]
   limit?: number
 }
 
@@ -26,11 +26,11 @@ export interface OllamaStatus {
 
 class ScraperService {
   /**
-   * Sincronizar posts de Product Hunt
+   * Sincronizar productos de Product Hunt
    * - Sin topic_ids: sincroniza todos los topics activos
    * - Con topic_ids: sincroniza solo esos topics
    */
-  async syncPosts(data?: SyncRequest): Promise<TaskResponse> {
+  async syncProducts(data?: SyncRequest): Promise<TaskResponse> {
     const response = await api.post<TaskResponse>('/scraper/sync/', data || {})
     return response.data
   }
@@ -44,11 +44,11 @@ class ScraperService {
   }
 
   /**
-   * Analizar posts con Ollama IA
-   * - Sin post_ids: analiza posts no analizados
-   * - Con post_ids: analiza solo esos posts
+   * Analizar productos con Ollama IA
+   * - Sin product_ids: analiza productos no analizados
+   * - Con product_ids: analiza solo esos productos
    */
-  async analyzePosts(data?: AnalyzeRequest): Promise<TaskResponse> {
+  async analyzeProducts(data?: AnalyzeRequest): Promise<TaskResponse> {
     const response = await api.post<TaskResponse>('/scraper/analyze/', data || {})
     return response.data
   }
