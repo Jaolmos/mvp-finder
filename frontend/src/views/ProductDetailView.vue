@@ -102,6 +102,12 @@ const formattedDate = computed(() => {
   })
 })
 
+// Autor mostrado (Anónimo si es [REDACTED] o vacío)
+const displayAuthor = computed(() => {
+  const author = productsStore.currentProduct?.author
+  return (!author || author === '[REDACTED]') ? 'Anónimo' : author
+})
+
 // Toggle favorito
 const handleToggleFavorite = async () => {
   if (productsStore.currentProduct) {
@@ -206,7 +212,7 @@ const handleDeleteProduct = async () => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  {{ productsStore.currentProduct.author }}
+                  {{ displayAuthor }}
                 </span>
 
                 <span class="flex items-center gap-1">

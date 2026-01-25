@@ -163,6 +163,7 @@ class ProductHuntClient:
                         createdAt
                         makers {
                             username
+                            name
                         }
                         topics {
                             edges {

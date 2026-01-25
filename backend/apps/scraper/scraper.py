@@ -150,9 +150,14 @@ class ProductHuntScraper:
             created_at_str = node.get('createdAt')
             created_at = date_parser.parse(created_at_str) if created_at_str else django_timezone.now()
 
-            # Extraer maker principal
+            # Extraer maker principal (usar name si username es [REDACTED])
             makers = node.get('makers', [])
-            author = makers[0].get('username') if makers else "unknown"
+            if makers:
+                username = makers[0].get('username', '')
+                name = makers[0].get('name', '')
+                author = name if username == '[REDACTED]' or not username else username
+            else:
+                author = "Anónimo"
 
             # Obtener votos y comentarios
             votes_count = node.get('votesCount', 0)
