@@ -19,12 +19,6 @@ const formattedDate = computed(() => {
   })
 })
 
-// Autor mostrado (Anónimo si es [REDACTED] o vacío)
-const displayAuthor = computed(() => {
-  const author = props.product.author
-  return (!author || author === '[REDACTED]') ? 'Anónimo' : author
-})
-
 // Color del badge de score según valor
 const scoreColorClass = computed(() => {
   const score = props.product.score
@@ -100,7 +94,7 @@ const handleClick = () => {
       {{ product.tagline }}
     </p>
 
-    <!-- Meta row: Topic + Author -->
+    <!-- Meta row: Topic -->
     <div class="flex items-center gap-2 mb-3 text-xs text-dark-400">
       <span
         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-400 font-medium"
@@ -110,8 +104,6 @@ const handleClick = () => {
         </svg>
         {{ product.topic.name }}
       </span>
-      <span class="text-dark-600">·</span>
-      <span class="truncate">{{ displayAuthor }}</span>
     </div>
 
     <!-- Footer: Score + Date + Analyzed -->
