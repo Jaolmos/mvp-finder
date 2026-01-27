@@ -30,6 +30,7 @@ export interface Product {
   tags?: string
   analyzed_at?: string | null
   is_favorite?: boolean
+  has_note?: boolean
 }
 
 export interface Category {
