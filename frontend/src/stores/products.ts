@@ -4,7 +4,8 @@ import productService, {
   type Product,
   type ProductFilters,
   type ProductListResponse,
-  type Category
+  type Category,
+  type ProductNote
 } from '@/services/products'
 
 export const useProductsStore = defineStore('products', () => {
@@ -21,6 +22,11 @@ export const useProductsStore = defineStore('products', () => {
   })
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  // State de notas
+  const currentNote = ref<ProductNote | null>(null)
+  const noteLoading = ref(false)
+  const noteError = ref<string | null>(null)
 
   // Getters
   const filteredProducts = computed(() => {
@@ -177,6 +183,78 @@ export const useProductsStore = defineStore('products', () => {
     currentProduct.value = null
   }
 
+  // Acciones de notas
+  async function fetchNote(productId: number): Promise<void> {
+    noteLoading.value = true
+    noteError.value = null
+
+    try {
+      currentNote.value = await productService.getNote(productId)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al cargar nota'
+      noteError.value = errorMessage
+      currentNote.value = null
+    } finally {
+      noteLoading.value = false
+    }
+  }
+
+  async function createNote(productId: number, content: string): Promise<boolean> {
+    noteLoading.value = true
+    noteError.value = null
+
+    try {
+      const response = await productService.createNote(productId, { content })
+      currentNote.value = response.note
+      return true
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al crear nota'
+      noteError.value = errorMessage
+      return false
+    } finally {
+      noteLoading.value = false
+    }
+  }
+
+  async function updateNote(productId: number, content: string): Promise<boolean> {
+    noteLoading.value = true
+    noteError.value = null
+
+    try {
+      const response = await productService.updateNote(productId, { content })
+      currentNote.value = response.note
+      return true
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar nota'
+      noteError.value = errorMessage
+      return false
+    } finally {
+      noteLoading.value = false
+    }
+  }
+
+  async function deleteNote(productId: number): Promise<boolean> {
+    noteLoading.value = true
+    noteError.value = null
+
+    try {
+      await productService.deleteNote(productId)
+      currentNote.value = null
+      return true
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar nota'
+      noteError.value = errorMessage
+      return false
+    } finally {
+      noteLoading.value = false
+    }
+  }
+
+  function clearNote(): void {
+    currentNote.value = null
+    noteError.value = null
+  }
+
   return {
     // State
     products,
@@ -186,6 +264,9 @@ export const useProductsStore = defineStore('products', () => {
     pagination,
     loading,
     error,
+    currentNote,
+    noteLoading,
+    noteError,
     // Getters
     filteredProducts,
     favoriteCount,
@@ -205,6 +286,11 @@ export const useProductsStore = defineStore('products', () => {
     previousPage,
     goToPage,
     clearError,
-    clearCurrentProduct
+    clearCurrentProduct,
+    fetchNote,
+    createNote,
+    updateNote,
+    deleteNote,
+    clearNote
   }
 })
