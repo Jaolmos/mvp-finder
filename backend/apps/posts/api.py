@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from config.auth import JWTAuth
-from .models import Product, Favorite
+from .models import Product, Favorite, ProductNote
 
 router = Router(tags=["Products"])
 
@@ -184,6 +184,36 @@ class DeleteResponseSchema(Schema):
     message: str
 
 
+class MessageSchema(Schema):
+    """Schema para mensajes genéricos."""
+    message: str
+
+
+class NoteSchema(Schema):
+    """Schema para retornar nota existente."""
+    id: int
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class NoteCreateSchema(Schema):
+    """Schema para crear nota."""
+    content: str = Field(..., min_length=1)
+
+
+class NoteUpdateSchema(Schema):
+    """Schema para actualizar nota."""
+    content: str = Field(..., min_length=1)
+
+
+class NoteResponseSchema(Schema):
+    """Schema para respuestas de creación/actualización."""
+    success: bool
+    message: str
+    note: NoteSchema
+
+
 @router.delete("/{product_id}/", response=DeleteResponseSchema, auth=JWTAuth())
 def delete_product(request, product_id: int):
     """
@@ -223,3 +253,95 @@ def toggle_favorite(request, product_id: int):
         "is_favorite": True,
         "message": "Producto añadido a favoritos"
     }
+
+
+# Endpoints de notas
+@router.get("/{product_id}/note/", response={200: NoteSchema, 404: MessageSchema}, auth=JWTAuth())
+def get_product_note(request, product_id: int):
+    """
+    Obtener la nota del usuario para un producto específico.
+
+    Retorna 404 si no existe nota.
+    Requiere autenticación JWT.
+    """
+    user = request.auth
+    product = get_object_or_404(Product, id=product_id)
+
+    try:
+        note = ProductNote.objects.get(user=user, product=product)
+        return 200, note
+    except ProductNote.DoesNotExist:
+        return 404, {"message": "No existe nota para este producto"}
+
+
+@router.post("/{product_id}/note/", response={201: NoteResponseSchema, 400: MessageSchema}, auth=JWTAuth())
+def create_product_note(request, product_id: int, payload: NoteCreateSchema):
+    """
+    Crear una nota para un producto.
+
+    Retorna 400 si ya existe una nota (usar PUT para actualizar).
+    Requiere autenticación JWT.
+    """
+    user = request.auth
+    product = get_object_or_404(Product, id=product_id)
+
+    # Verificar que no exista ya una nota
+    if ProductNote.objects.filter(user=user, product=product).exists():
+        return 400, {"message": "Ya existe una nota para este producto. Usa PUT para actualizar."}
+
+    note = ProductNote.objects.create(
+        user=user,
+        product=product,
+        content=payload.content
+    )
+
+    return 201, {
+        "success": True,
+        "message": "Nota creada correctamente",
+        "note": note
+    }
+
+
+@router.put("/{product_id}/note/", response={200: NoteResponseSchema, 404: MessageSchema}, auth=JWTAuth())
+def update_product_note(request, product_id: int, payload: NoteUpdateSchema):
+    """
+    Actualizar la nota existente de un producto.
+
+    Retorna 404 si no existe nota.
+    Requiere autenticación JWT.
+    """
+    user = request.auth
+    product = get_object_or_404(Product, id=product_id)
+
+    try:
+        note = ProductNote.objects.get(user=user, product=product)
+        note.content = payload.content
+        note.save()
+
+        return 200, {
+            "success": True,
+            "message": "Nota actualizada correctamente",
+            "note": note
+        }
+    except ProductNote.DoesNotExist:
+        return 404, {"message": "No existe nota para este producto"}
+
+
+@router.delete("/{product_id}/note/", response={200: MessageSchema, 404: MessageSchema}, auth=JWTAuth())
+def delete_product_note(request, product_id: int):
+    """
+    Eliminar la nota de un producto.
+
+    Retorna 404 si no existe nota.
+    Requiere autenticación JWT.
+    """
+    user = request.auth
+    product = get_object_or_404(Product, id=product_id)
+
+    try:
+        note = ProductNote.objects.get(user=user, product=product)
+        note.delete()
+
+        return 200, {"message": "Nota eliminada correctamente"}
+    except ProductNote.DoesNotExist:
+        return 404, {"message": "No existe nota para este producto"}
