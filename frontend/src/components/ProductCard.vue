@@ -106,9 +106,9 @@ const handleClick = () => {
       </span>
     </div>
 
-    <!-- Footer: Score + Date + Analyzed -->
+    <!-- Footer: Score + Date + Note (izquierda) | IA (derecha) -->
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <!-- Score badge -->
         <span
           class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold ring-1 ring-inset"
@@ -122,9 +122,24 @@ const handleClick = () => {
 
         <!-- Date -->
         <span class="text-xs text-dark-500">{{ formattedDate }}</span>
+
+        <!-- Note badge -->
+        <div
+          v-if="product.has_note"
+          class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs font-medium"
+          title="Tiene nota"
+        >
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        </div>
       </div>
 
-      <!-- Analyzed badge -->
+      <!-- Analyzed badge (derecha) -->
       <div
         v-if="product.analyzed"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary-500/10 text-secondary-400 text-xs font-medium"

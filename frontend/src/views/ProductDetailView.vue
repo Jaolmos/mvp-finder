@@ -81,12 +81,18 @@ const handleAnalyzeProduct = async () => {
   }
 }
 
-// Cargar producto y estado de Ollama al montar
+// Cargar producto, estado de Ollama y nota al montar
 onMounted(async () => {
   await Promise.all([
     productId.value ? productsStore.fetchProduct(productId.value) : Promise.resolve(),
+    productId.value ? productsStore.fetchNote(productId.value) : Promise.resolve(),
     loadOllamaStatus()
   ])
+
+  // Inicializar contenido si existe nota
+  if (productsStore.currentNote) {
+    noteContent.value = productsStore.currentNote.content
+  }
 })
 
 // Formatear fecha
@@ -125,6 +131,12 @@ const openInProductHunt = () => {
 const showDeleteConfirm = ref(false)
 const isDeleting = ref(false)
 
+// Estado de notas
+const isEditingNote = ref(false)
+const noteContent = ref('')
+const noteSaveSuccess = ref(false)
+const noteSaveError = ref('')
+
 // Eliminar producto
 const handleDeleteProduct = async () => {
   if (!productsStore.currentProduct || isDeleting.value) return
@@ -138,6 +150,66 @@ const handleDeleteProduct = async () => {
     isDeleting.value = false
     showDeleteConfirm.value = false
   }
+}
+
+// Funciones de notas
+const handleCreateNote = async () => {
+  if (!productId.value || !noteContent.value.trim()) return
+
+  noteSaveError.value = ''
+  noteSaveSuccess.value = false
+
+  const success = await productsStore.createNote(productId.value, noteContent.value.trim())
+
+  if (success) {
+    noteSaveSuccess.value = true
+    isEditingNote.value = false
+    setTimeout(() => (noteSaveSuccess.value = false), 3000)
+  } else {
+    noteSaveError.value = productsStore.noteError || 'Error al guardar nota'
+  }
+}
+
+const handleUpdateNote = async () => {
+  if (!productId.value || !noteContent.value.trim()) return
+
+  noteSaveError.value = ''
+  noteSaveSuccess.value = false
+
+  const success = await productsStore.updateNote(productId.value, noteContent.value.trim())
+
+  if (success) {
+    noteSaveSuccess.value = true
+    isEditingNote.value = false
+    setTimeout(() => (noteSaveSuccess.value = false), 3000)
+  } else {
+    noteSaveError.value = productsStore.noteError || 'Error al actualizar nota'
+  }
+}
+
+const handleDeleteNote = async () => {
+  if (!productId.value || !confirm('¿Estás seguro de eliminar esta nota?')) return
+
+  noteSaveError.value = ''
+
+  const success = await productsStore.deleteNote(productId.value)
+
+  if (success) {
+    noteContent.value = ''
+    isEditingNote.value = false
+  } else {
+    noteSaveError.value = productsStore.noteError || 'Error al eliminar nota'
+  }
+}
+
+const handleCancelEdit = () => {
+  if (productsStore.currentNote) {
+    noteContent.value = productsStore.currentNote.content
+  } else {
+    noteContent.value = ''
+  }
+  isEditingNote.value = false
+  noteSaveError.value = ''
 }
 </script>
 
@@ -485,6 +557,89 @@ const handleDeleteProduct = async () => {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Mis Notas -->
+        <div class="bg-dark-800 rounded-lg p-4 sm:p-6 border border-dark-700">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
+              <span>📝</span>
+              Mis Notas
+            </h3>
+
+            <!-- Botones de acción -->
+            <div class="flex gap-2" v-if="!isEditingNote && productsStore.currentNote">
+              <button
+                @click="isEditingNote = true"
+                class="px-3 py-1 text-sm bg-primary hover:bg-primary/80 text-white rounded transition-colors"
+              >
+                Editar
+              </button>
+              <button
+                @click="handleDeleteNote"
+                class="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                :disabled="productsStore.noteLoading"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          <!-- Mostrar nota existente (modo lectura) -->
+          <div v-if="productsStore.currentNote && !isEditingNote" class="space-y-2">
+            <p class="text-gray-300 whitespace-pre-wrap">{{ productsStore.currentNote.content }}</p>
+            <p class="text-sm text-gray-500">
+              Última edición: {{ new Date(productsStore.currentNote.updated_at).toLocaleString('es-ES') }}
+            </p>
+          </div>
+
+          <!-- Formulario de edición/creación -->
+          <div v-else-if="isEditingNote || !productsStore.currentNote" class="space-y-3">
+            <textarea
+              v-model="noteContent"
+              placeholder="Escribe tus notas, ideas o reflexiones sobre este producto..."
+              rows="6"
+              class="w-full px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+            ></textarea>
+
+            <!-- Mensajes de éxito/error -->
+            <div v-if="noteSaveSuccess" class="text-sm text-green-400">
+              ✓ Nota guardada correctamente
+            </div>
+            <div v-if="noteSaveError" class="text-sm text-red-400">
+              {{ noteSaveError }}
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-2">
+              <button
+                @click="productsStore.currentNote ? handleUpdateNote() : handleCreateNote()"
+                :disabled="!noteContent.trim() || productsStore.noteLoading"
+                class="px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ productsStore.noteLoading ? 'Guardando...' : 'Guardar' }}
+              </button>
+              <button
+                v-if="isEditingNote || productsStore.currentNote"
+                @click="handleCancelEdit"
+                :disabled="productsStore.noteLoading"
+                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <!-- Estado vacío -->
+          <div v-if="!productsStore.currentNote && !isEditingNote" class="text-center py-8">
+            <p class="text-gray-500 mb-4">Aún no tienes notas para este producto</p>
+            <button
+              @click="isEditingNote = true"
+              class="px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded transition-colors"
+            >
+              Agregar Nota
+            </button>
           </div>
         </div>
       </div>

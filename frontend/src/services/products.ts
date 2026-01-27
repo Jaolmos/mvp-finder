@@ -30,6 +30,7 @@ export interface Product {
   tags?: string
   analyzed_at?: string | null
   is_favorite?: boolean
+  has_note?: boolean
 }
 
 export interface Category {
@@ -58,6 +59,27 @@ export interface ProductStats {
   total_products: number
   analyzed_products: number
   favorites_count: number
+}
+
+export interface ProductNote {
+  id: number
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NoteCreatePayload {
+  content: string
+}
+
+export interface NoteUpdatePayload {
+  content: string
+}
+
+export interface NoteResponse {
+  success: boolean
+  message: string
+  note: ProductNote
 }
 
 class ProductService {
@@ -108,6 +130,45 @@ class ProductService {
    */
   async getStats(): Promise<ProductStats> {
     const response = await api.get<ProductStats>('/products/stats/')
+    return response.data
+  }
+
+  /**
+   * Obtener nota de un producto
+   */
+  async getNote(productId: number): Promise<ProductNote | null> {
+    try {
+      const response = await api.get<ProductNote>(`/products/${productId}/note/`)
+      return response.data
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null // No hay nota
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Crear nota para un producto
+   */
+  async createNote(productId: number, payload: NoteCreatePayload): Promise<NoteResponse> {
+    const response = await api.post<NoteResponse>(`/products/${productId}/note/`, payload)
+    return response.data
+  }
+
+  /**
+   * Actualizar nota de un producto
+   */
+  async updateNote(productId: number, payload: NoteUpdatePayload): Promise<NoteResponse> {
+    const response = await api.put<NoteResponse>(`/products/${productId}/note/`, payload)
+    return response.data
+  }
+
+  /**
+   * Eliminar nota de un producto
+   */
+  async deleteNote(productId: number): Promise<{ message: string }> {
+    const response = await api.delete<{ message: string }>(`/products/${productId}/note/`)
     return response.data
   }
 }

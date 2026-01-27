@@ -165,3 +165,49 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.product.title[:30]}..."
+
+
+class ProductNote(models.Model):
+    """
+    Notas personales de usuarios sobre productos.
+
+    Permite a cada usuario guardar reflexiones, ideas y comentarios privados
+    sobre productos que encuentran interesantes.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='product_notes',
+        help_text="Usuario dueño de la nota"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='notes',
+        help_text="Producto sobre el que se escribe la nota"
+    )
+    content = models.TextField(
+        help_text="Contenido de la nota"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Cuándo se creó la nota"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="Última actualización de la nota"
+    )
+
+    class Meta:
+        db_table = 'posts_productnote'
+        unique_together = ['user', 'product']
+        ordering = ['-updated_at']
+        verbose_name = "Nota de Producto"
+        verbose_name_plural = "Notas de Productos"
+        indexes = [
+            models.Index(fields=['user', 'product']),
+        ]
+
+    def __str__(self):
+        return f"Nota de {self.user.username} en {self.product.title[:30]}..."
