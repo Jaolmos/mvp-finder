@@ -39,6 +39,7 @@ class ProductListSchema(Schema):
     tags: str
     summary: str
     is_favorite: bool = False
+    has_note: bool = False
 
 
 class ProductDetailSchema(Schema):
@@ -114,7 +115,8 @@ def list_products(
 
     user = request.auth
     products = Product.objects.select_related('topic').annotate(
-        is_favorite=Exists(Favorite.objects.filter(user=user, product=OuterRef('pk')))
+        is_favorite=Exists(Favorite.objects.filter(user=user, product=OuterRef('pk'))),
+        has_note=Exists(ProductNote.objects.filter(user=user, product=OuterRef('pk')))
     ).all()
 
     # Aplicar filtros
@@ -154,7 +156,8 @@ def list_favorites(request):
     user = request.auth
     favorite_ids = Favorite.objects.filter(user=user).values_list('product_id', flat=True)
     products = Product.objects.filter(id__in=favorite_ids).select_related('topic').annotate(
-        is_favorite=Value(True)
+        is_favorite=Value(True),
+        has_note=Exists(ProductNote.objects.filter(user=user, product=OuterRef('pk')))
     )
     return products
 
