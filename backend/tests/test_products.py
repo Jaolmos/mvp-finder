@@ -226,4 +226,196 @@ class TestListFavorites:
         assert len(data['items']) == 1
 
 
+@pytest.mark.django_db
+class TestProductOrdering:
+    """Tests para el ordenamiento de productos."""
+
+    def test_ordering_by_date_desc_default(self, authenticated_client, topic):
+        """Test ordenamiento por fecha descendente (por defecto)."""
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Crear productos con fechas diferentes
+        old = Product.objects.create(
+            external_id='ph_old',
+            topic=topic,
+            title='Old Product',
+            tagline='Old',
+            content='Old',
+            author='author',
+            score=100,
+            votes_count=100,
+            comments_count=10,
+            url='https://ph.com/old',
+            created_at_source=timezone.now() - timedelta(days=10)
+        )
+        new = Product.objects.create(
+            external_id='ph_new',
+            topic=topic,
+            title='New Product',
+            tagline='New',
+            content='New',
+            author='author',
+            score=50,
+            votes_count=50,
+            comments_count=5,
+            url='https://ph.com/new',
+            created_at_source=timezone.now()
+        )
+
+        response = authenticated_client.get('/products/')
+        assert response.status_code == 200
+        data = response.json()
+
+        # El más reciente debe estar primero
+        assert data['items'][0]['external_id'] == 'ph_new'
+
+    def test_ordering_by_date_asc(self, authenticated_client, topic):
+        """Test ordenamiento por fecha ascendente."""
+        from django.utils import timezone
+        from datetime import timedelta
+
+        old = Product.objects.create(
+            external_id='ph_oldest',
+            topic=topic,
+            title='Oldest Product',
+            tagline='Old',
+            content='Old',
+            author='author',
+            score=100,
+            votes_count=100,
+            comments_count=10,
+            url='https://ph.com/oldest',
+            created_at_source=timezone.now() - timedelta(days=30)
+        )
+        new = Product.objects.create(
+            external_id='ph_newest',
+            topic=topic,
+            title='Newest Product',
+            tagline='New',
+            content='New',
+            author='author',
+            score=50,
+            votes_count=50,
+            comments_count=5,
+            url='https://ph.com/newest',
+            created_at_source=timezone.now()
+        )
+
+        response = authenticated_client.get('/products/?ordering=created_at_source')
+        assert response.status_code == 200
+        data = response.json()
+
+        # El más antiguo debe estar primero
+        assert data['items'][0]['external_id'] == 'ph_oldest'
+
+    def test_ordering_by_votes_desc(self, authenticated_client, topic):
+        """Test ordenamiento por votos descendente."""
+        low_votes = Product.objects.create(
+            external_id='ph_lowvotes',
+            topic=topic,
+            title='Low Votes',
+            tagline='Low',
+            content='Low',
+            author='author',
+            score=10,
+            votes_count=10,
+            comments_count=1,
+            url='https://ph.com/lowvotes',
+            created_at_source=topic.created_at
+        )
+        high_votes = Product.objects.create(
+            external_id='ph_highvotes',
+            topic=topic,
+            title='High Votes',
+            tagline='High',
+            content='High',
+            author='author',
+            score=1000,
+            votes_count=1000,
+            comments_count=100,
+            url='https://ph.com/highvotes',
+            created_at_source=topic.created_at
+        )
+
+        response = authenticated_client.get('/products/?ordering=-votes_count')
+        assert response.status_code == 200
+        data = response.json()
+
+        # El de más votos debe estar primero
+        assert data['items'][0]['external_id'] == 'ph_highvotes'
+
+    def test_ordering_by_potential_filters_analyzed(self, authenticated_client, topic):
+        """Test que ordenar por potencial filtra solo productos analizados."""
+        from django.utils import timezone
+
+        # Producto sin analizar
+        not_analyzed = Product.objects.create(
+            external_id='ph_notanalyzed',
+            topic=topic,
+            title='Not Analyzed',
+            tagline='Not',
+            content='Not',
+            author='author',
+            score=100,
+            votes_count=100,
+            comments_count=10,
+            url='https://ph.com/notanalyzed',
+            created_at_source=timezone.now(),
+            analyzed=False,
+            potential_score=None
+        )
+        # Producto analizado con bajo potencial
+        low_potential = Product.objects.create(
+            external_id='ph_lowpotential',
+            topic=topic,
+            title='Low Potential',
+            tagline='Low',
+            content='Low',
+            author='author',
+            score=100,
+            votes_count=100,
+            comments_count=10,
+            url='https://ph.com/lowpotential',
+            created_at_source=timezone.now(),
+            analyzed=True,
+            potential_score=3
+        )
+        # Producto analizado con alto potencial
+        high_potential = Product.objects.create(
+            external_id='ph_highpotential',
+            topic=topic,
+            title='High Potential',
+            tagline='High',
+            content='High',
+            author='author',
+            score=100,
+            votes_count=100,
+            comments_count=10,
+            url='https://ph.com/highpotential',
+            created_at_source=timezone.now(),
+            analyzed=True,
+            potential_score=9
+        )
+
+        response = authenticated_client.get('/products/?ordering=-potential_score')
+        assert response.status_code == 200
+        data = response.json()
+
+        # Solo deben aparecer los analizados
+        external_ids = [item['external_id'] for item in data['items']]
+        assert 'ph_notanalyzed' not in external_ids
+        assert 'ph_highpotential' in external_ids
+        assert 'ph_lowpotential' in external_ids
+
+        # El de mayor potencial debe estar primero
+        assert data['items'][0]['external_id'] == 'ph_highpotential'
+
+    def test_ordering_invalid_ignored(self, authenticated_client, product):
+        """Test que un ordenamiento inválido usa el por defecto."""
+        response = authenticated_client.get('/products/?ordering=invalid_field')
+        assert response.status_code == 200
+        # No debe dar error, usa ordenamiento por defecto
+
+
 # Ejecutar: docker compose exec backend uv run pytest tests/test_products.py -v
