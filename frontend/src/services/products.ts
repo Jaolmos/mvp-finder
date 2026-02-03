@@ -46,6 +46,7 @@ export interface ProductFilters {
   min_potential?: number
   search?: string
   is_favorite?: boolean
+  ordering?: string
   page?: number
   page_size?: number
 }

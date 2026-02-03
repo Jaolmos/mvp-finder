@@ -13,8 +13,19 @@ const productsStore = useProductsStore()
 const searchQuery = ref('')
 const selectedTopic = ref<number | undefined>(undefined)
 const minPotential = ref<number | undefined>(undefined)
+const selectedOrdering = ref<string>('-created_at_source')
 const showOnlyFavorites = ref(false)
 const showOnlyAnalyzed = ref(false)
+
+// Opciones de ordenamiento
+const orderingOptions = [
+  { value: '-created_at_source', label: 'Más recientes' },
+  { value: 'created_at_source', label: 'Más antiguos' },
+  { value: '-potential_score', label: 'Mayor potencial' },
+  { value: 'potential_score', label: 'Menor potencial' },
+  { value: '-votes_count', label: 'Más votos' },
+  { value: 'votes_count', label: 'Menos votos' }
+]
 
 // Lista única de topics disponibles
 const availableTopics = computed(() => {
@@ -49,6 +60,12 @@ onMounted(async () => {
       minPotential.value = potential
     }
   }
+  if (route.query.ordering) {
+    const ordering = route.query.ordering as string
+    if (orderingOptions.some(opt => opt.value === ordering)) {
+      selectedOrdering.value = ordering
+    }
+  }
 
   // Aplicar filtros desde query params
   await productsStore.fetchProducts({
@@ -56,7 +73,8 @@ onMounted(async () => {
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
-    min_potential: minPotential.value || undefined
+    min_potential: minPotential.value || undefined,
+    ordering: selectedOrdering.value
   })
 })
 
@@ -73,13 +91,21 @@ watch(() => route.query, async (newQuery) => {
   const potential = newQuery.min_potential ? parseInt(newQuery.min_potential as string) : undefined
   minPotential.value = potential && !isNaN(potential) ? potential : undefined
 
+  const ordering = newQuery.ordering as string
+  if (ordering && orderingOptions.some(opt => opt.value === ordering)) {
+    selectedOrdering.value = ordering
+  } else {
+    selectedOrdering.value = '-created_at_source'
+  }
+
   // Recargar productos con los nuevos filtros
   await productsStore.fetchProducts({
     analyzed: showOnlyAnalyzed.value || undefined,
     topic: selectedTopic.value || undefined,
     search: searchQuery.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
-    min_potential: minPotential.value || undefined
+    min_potential: minPotential.value || undefined,
+    ordering: selectedOrdering.value
   })
 }, { deep: true })
 
@@ -89,6 +115,7 @@ const applyFilters = async () => {
     search: searchQuery.value || undefined,
     topic: selectedTopic.value || undefined,
     min_potential: minPotential.value || undefined,
+    ordering: selectedOrdering.value,
     is_favorite: showOnlyFavorites.value || undefined,
     analyzed: showOnlyAnalyzed.value || undefined,
     page: 1 // Resetear a página 1 cuando se aplican filtros
@@ -100,10 +127,11 @@ const clearFilters = async () => {
   searchQuery.value = ''
   selectedTopic.value = undefined
   minPotential.value = undefined
+  selectedOrdering.value = '-created_at_source'
   showOnlyFavorites.value = false
   showOnlyAnalyzed.value = false
   productsStore.resetFilters()
-  await productsStore.fetchProducts()
+  await productsStore.fetchProducts({ ordering: '-created_at_source' })
 }
 
 // Manejar toggle de favorito
@@ -235,6 +263,20 @@ const pageNumbersMobile = computed(() => {
             <option :value="5">Potencial ≥ 5</option>
             <option :value="7">Potencial ≥ 7</option>
             <option :value="8">Potencial ≥ 8</option>
+          </select>
+
+          <!-- Ordenamiento -->
+          <select
+            v-model="selectedOrdering"
+            class="w-full md:w-auto px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option
+              v-for="option in orderingOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select>
 
           <!-- Checkboxes (en fila en móvil) -->

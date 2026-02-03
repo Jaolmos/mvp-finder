@@ -104,10 +104,19 @@ def list_products(
     min_score: Optional[int] = None,
     min_potential: Optional[int] = None,
     search: Optional[str] = None,
-    is_favorite: Optional[bool] = None
+    is_favorite: Optional[bool] = None,
+    ordering: Optional[str] = None
 ):
     """
     Listar products con filtros y paginación.
+
+    Parámetro ordering acepta:
+    - -created_at_source (más recientes primero, por defecto)
+    - created_at_source (más antiguos primero)
+    - -potential_score (mayor potencial primero)
+    - potential_score (menor potencial primero)
+    - -votes_count (más votos primero)
+    - votes_count (menos votos primero)
 
     Requiere autenticación JWT.
     """
@@ -138,6 +147,20 @@ def list_products(
 
     if is_favorite:
         products = products.filter(is_favorite=True)
+
+    # Aplicar ordenamiento
+    valid_orderings = [
+        '-created_at_source', 'created_at_source',
+        '-potential_score', 'potential_score',
+        '-votes_count', 'votes_count'
+    ]
+    if ordering and ordering in valid_orderings:
+        # Si ordena por potencial, filtrar solo los analizados (que tienen potential_score)
+        if 'potential_score' in ordering:
+            products = products.filter(potential_score__isnull=False)
+        products = products.order_by(ordering)
+    else:
+        products = products.order_by('-created_at_source')
 
     return products
 
