@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -116,5 +117,8 @@ router.afterEach(() => {
         <slot />
       </main>
     </div>
+
+    <!-- Toast notifications container -->
+    <ToastContainer />
   </div>
 </template>
