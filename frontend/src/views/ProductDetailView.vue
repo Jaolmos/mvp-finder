@@ -190,8 +190,43 @@ const handleCancelEdit = () => {
     noteContent.value = ''
   }
   isEditingNote.value = false
-  noteSaveError.value = ''
 }
+
+// Tags visualization
+const tagColors = [
+  'bg-primary-500/20 text-primary-300 border-primary-500/30',
+  'bg-secondary-500/20 text-secondary-300 border-secondary-500/30',
+  'bg-accent/20 text-accent border-accent/30',
+  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+]
+
+// Hash simple para asignar color consistente por tag
+const getTagColor = (tag: string) => {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return tagColors[Math.abs(hash) % tagColors.length]
+}
+
+const showAllTags = ref(false)
+const maxVisibleTags = 10
+
+const visibleTags = computed(() => {
+  if (!productsStore.currentProduct?.tags) return []
+  const allTags = productsStore.currentProduct.tags.split(',').map(t => t.trim()).filter(t => t)
+  return showAllTags.value ? allTags : allTags.slice(0, maxVisibleTags)
+})
+
+const hiddenTagsCount = computed(() => {
+  if (!productsStore.currentProduct?.tags) return 0
+  const allTags = productsStore.currentProduct.tags.split(',').map(t => t.trim()).filter(t => t)
+  return Math.max(0, allTags.length - maxVisibleTags)
+})
 </script>
 
 <template>
@@ -510,15 +545,25 @@ const handleCancelEdit = () => {
 
             <!-- Tags -->
             <div v-if="productsStore.currentProduct.tags" class="bg-dark-800/50 rounded-lg p-4">
-              <h3 class="text-sm font-medium text-dark-300 mb-2">Tags</h3>
+              <h3 class="text-sm font-medium text-dark-300 mb-3">Tags</h3>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="tag in productsStore.currentProduct.tags.split(',')"
+                  v-for="tag in visibleTags"
                   :key="tag"
-                  class="px-2 py-1 bg-dark-700 text-dark-200 rounded text-sm"
+                  :class="getTagColor(tag)"
+                  class="px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:scale-105"
                 >
-                  {{ tag.trim() }}
+                  {{ tag }}
                 </span>
+
+                <!-- Botón "Ver más" -->
+                <button
+                  v-if="hiddenTagsCount > 0"
+                  @click="showAllTags = !showAllTags"
+                  class="px-3 py-1.5 rounded-full text-sm font-medium border border-dark-600 bg-dark-700/50 text-dark-300 hover:bg-dark-600 hover:text-white transition-colors"
+                >
+                  {{ showAllTags ? 'Ver menos' : `+${hiddenTagsCount} más` }}
+                </button>
               </div>
             </div>
           </div>

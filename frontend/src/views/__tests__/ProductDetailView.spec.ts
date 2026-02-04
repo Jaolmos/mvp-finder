@@ -278,6 +278,98 @@ describe('ProductDetailView', () => {
       expect(wrapper.text()).toContain('automation')
       expect(wrapper.text()).toContain('devtools')
     })
+
+    it('muestra tags con estilos de pill coloreados', async () => {
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
+        mockOllamaReady
+      )
+
+      const tagElements = wrapper.findAll('span').filter(el =>
+        el.text() === 'testing' || el.text() === 'automation' || el.text() === 'devtools'
+      )
+
+      expect(tagElements.length).toBe(3)
+
+      // Verificar que tienen clases de pill y colores
+      tagElements.forEach(tag => {
+        expect(tag.classes()).toContain('rounded-full')
+        expect(tag.classes()).toContain('border')
+        // Cada tag debe tener algún color de la paleta
+        const hasColor = tag.classes().some(c =>
+          c.includes('bg-primary') ||
+          c.includes('bg-secondary') ||
+          c.includes('bg-accent') ||
+          c.includes('bg-emerald') ||
+          c.includes('bg-rose') ||
+          c.includes('bg-violet') ||
+          c.includes('bg-amber') ||
+          c.includes('bg-cyan')
+        )
+        expect(hasColor).toBe(true)
+      })
+    })
+
+    it('limita la visualización a 10 tags y muestra botón "Ver más"', async () => {
+      const manyTags = Array.from({ length: 15 }, (_, i) => `tag${i + 1}`).join(', ')
+      const productWithManyTags = {
+        ...mockAnalyzedProduct,
+        tags: manyTags
+      }
+
+      const wrapper = await mountProductDetailView(
+        { currentProduct: productWithManyTags },
+        mockOllamaReady
+      )
+
+      // Debe mostrar solo 10 tags inicialmente
+      const tagElements = wrapper.findAll('span').filter(el => el.text().startsWith('tag'))
+      expect(tagElements.length).toBe(10)
+
+      // Debe mostrar botón "+5 más"
+      const buttons = wrapper.findAll('button')
+      const moreButton = buttons.find(btn => btn.text() === '+5 más')
+      expect(moreButton?.exists()).toBe(true)
+    })
+
+    it('muestra todos los tags al hacer click en "Ver más"', async () => {
+      const manyTags = Array.from({ length: 15 }, (_, i) => `tag${i + 1}`).join(', ')
+      const productWithManyTags = {
+        ...mockAnalyzedProduct,
+        tags: manyTags
+      }
+
+      const wrapper = await mountProductDetailView(
+        { currentProduct: productWithManyTags },
+        mockOllamaReady
+      )
+
+      // Click en "Ver más"
+      const buttons = wrapper.findAll('button')
+      const moreButton = buttons.find(btn => btn.text() === '+5 más')
+      await moreButton?.trigger('click')
+      await flushPromises()
+
+      // Debe mostrar todos los 15 tags
+      const tagElements = wrapper.findAll('span').filter(el => el.text().startsWith('tag'))
+      expect(tagElements.length).toBe(15)
+
+      // El botón debe cambiar a "Ver menos"
+      const lessButton = wrapper.findAll('button').find(btn => btn.text() === 'Ver menos')
+      expect(lessButton?.exists()).toBe(true)
+    })
+
+    it('no muestra botón "Ver más" con 10 tags o menos', async () => {
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
+        mockOllamaReady
+      )
+
+      // Solo tiene 3 tags, no debe mostrar botón
+      const buttons = wrapper.findAll('button')
+      const moreButton = buttons.find(btn => btn.text().includes('más'))
+      expect(moreButton).toBeUndefined()
+    })
   })
 
   describe('Interacción de análisis', () => {
