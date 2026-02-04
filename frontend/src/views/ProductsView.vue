@@ -4,10 +4,12 @@ import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import { useProductsStore } from '@/stores/products'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
 const productsStore = useProductsStore()
+const toast = useToast()
 
 // Filtros locales
 const searchQuery = ref('')
@@ -137,6 +139,8 @@ const clearFilters = async () => {
 // Manejar toggle de favorito
 const handleToggleFavorite = async (id: number) => {
   await productsStore.toggleFavorite(id)
+  const product = productsStore.products.find(p => p.id === id)
+  toast.success(product?.is_favorite ? 'Añadido a favoritos' : 'Eliminado de favoritos')
 }
 
 // Navegar al detalle del producto

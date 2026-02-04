@@ -3,8 +3,10 @@ import { ref, onMounted, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { scraperService } from '@/services'
+import { useToast } from '@/composables/useToast'
 
 const topicsStore = useTopicsStore()
+const toast = useToast()
 
 // Estado del modal
 const showModal = ref(false)
@@ -119,11 +121,13 @@ const handleSyncTopic = async (topicId: number) => {
 
     const response = await scraperService.syncPosts({ topic_ids: [topicId] })
     syncMessage.value = response.message
+    toast.info('Sincronizando topic...')
 
     // Esperar 3 segundos y recargar topics para actualizar last_sync
     setTimeout(async () => {
       await topicsStore.fetchTopics()
       syncMessage.value = 'Sincronización completada'
+      toast.success('Topic sincronizado')
 
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => {
@@ -132,6 +136,7 @@ const handleSyncTopic = async (topicId: number) => {
     }, 3000)
   } catch (error: any) {
     syncError.value = error.response?.data?.message || 'Error al sincronizar topic'
+    toast.error('Error al sincronizar topic')
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
