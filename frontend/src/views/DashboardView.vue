@@ -7,9 +7,11 @@ import { useProductsStore } from '@/stores/products'
 import { scraperService, productService } from '@/services'
 import type { OllamaStatus } from '@/services/scraper'
 import type { ProductStats } from '@/services/products'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const productsStore = useProductsStore()
+const toast = useToast()
 
 // Estado de sincronización
 const isSyncing = ref(false)
@@ -159,6 +161,8 @@ const goToTopics = () => {
 
 const handleToggleFavorite = async (id: number) => {
   await productsStore.toggleFavorite(id)
+  const product = productsStore.products.find(p => p.id === id)
+  toast.success(product?.is_favorite ? 'Añadido a favoritos' : 'Eliminado de favoritos')
 }
 
 const handleProductClick = (id: number) => {
@@ -174,6 +178,7 @@ const handleSync = async () => {
 
     const response = await scraperService.syncProducts()
     syncMessage.value = response.message
+    toast.info('Sincronizando productos...')
 
     // Esperar 3 segundos y recargar productos y stats
     setTimeout(async () => {
@@ -182,6 +187,7 @@ const handleSync = async () => {
         loadStats()
       ])
       syncMessage.value = 'Sincronización completada'
+      toast.success('Sincronización completada')
 
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => {
@@ -190,6 +196,7 @@ const handleSync = async () => {
     }, 3000)
   } catch (error: any) {
     syncError.value = error.response?.data?.message || 'Error al sincronizar productos'
+    toast.error('Error al sincronizar')
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
@@ -245,6 +252,7 @@ const stopAnalysisPolling = async () => {
   const finalProgress = analyzeProgress.value
   isAnalyzing.value = false
   analyzeMessage.value = `Análisis completado (${finalProgress} productos analizados)`
+  toast.success(`Análisis completado: ${finalProgress} productos`)
 
   // Limpiar mensaje después de 5 segundos
   setTimeout(() => {
@@ -272,6 +280,7 @@ const handleAnalyze = async () => {
     // Guardar conteo inicial para calcular progreso
     initialAnalyzedCount.value = globalStats.value?.analyzed_products ?? 0
     analyzeMessage.value = 'Iniciando análisis... (esto tarda ~3-4 minutos)'
+    toast.info('Iniciando análisis masivo...')
 
     // Persistir estado para poder retomar si el usuario navega
     saveAnalysisState({
@@ -291,6 +300,7 @@ const handleAnalyze = async () => {
     saveAnalysisState(null)
     isAnalyzing.value = false
     analyzeError.value = error.response?.data?.message || 'Error al analizar productos'
+    toast.error('Error al analizar productos')
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
