@@ -15,6 +15,16 @@ vi.mock('@/layouts/AppLayout.vue', () => ({
   }
 }))
 
+// Mock de useToast
+vi.mock('@/composables/useToast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn()
+  })
+}))
+
 // Mock de las rutas
 const routes = [
   { path: '/topics', name: 'topics', component: TopicsView },
