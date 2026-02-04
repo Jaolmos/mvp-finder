@@ -16,8 +16,6 @@ const productId = computed(() => parseInt(route.params.id as string))
 
 // Estado de análisis IA
 const isAnalyzing = ref(false)
-const analyzeError = ref('')
-const analyzeSuccess = ref('')
 const ollamaStatus = ref<OllamaStatus | null>(null)
 
 // Cargar estado de Ollama
@@ -36,13 +34,10 @@ const handleAnalyzeProduct = async () => {
 
   try {
     isAnalyzing.value = true
-    analyzeError.value = ''
-    analyzeSuccess.value = ''
 
     await scraperService.analyzeProducts({ product_ids: [productId.value] })
 
     // Esperar un poco para que el análisis se complete
-    analyzeSuccess.value = 'Analizando...'
     toast.info('Analizando producto...')
 
     // Polling para verificar cuando termine el análisis
@@ -55,11 +50,7 @@ const handleAnalyzeProduct = async () => {
 
       if (productsStore.currentProduct?.analyzed) {
         isAnalyzing.value = false
-        analyzeSuccess.value = 'Análisis completado'
         toast.success('Análisis completado')
-        setTimeout(() => {
-          analyzeSuccess.value = ''
-        }, 3000)
         return
       }
 
@@ -67,23 +58,14 @@ const handleAnalyzeProduct = async () => {
         setTimeout(checkAnalysis, 3000)
       } else {
         isAnalyzing.value = false
-        analyzeSuccess.value = ''
-        analyzeError.value = 'El análisis está tardando más de lo esperado. Recarga la página para ver el resultado.'
         toast.warning('El análisis está tardando más de lo esperado')
-        setTimeout(() => {
-          analyzeError.value = ''
-        }, 5000)
       }
     }
 
     setTimeout(checkAnalysis, 5000)
   } catch (error: any) {
     isAnalyzing.value = false
-    analyzeError.value = error.response?.data?.message || 'Error al analizar el producto'
     toast.error('Error al analizar producto')
-    setTimeout(() => {
-      analyzeError.value = ''
-    }, 5000)
   }
 }
 
@@ -142,8 +124,6 @@ const isDeleting = ref(false)
 // Estado de notas
 const isEditingNote = ref(false)
 const noteContent = ref('')
-const noteSaveSuccess = ref(false)
-const noteSaveError = ref('')
 
 // Eliminar producto
 const handleDeleteProduct = async () => {
@@ -166,18 +146,12 @@ const handleDeleteProduct = async () => {
 const handleCreateNote = async () => {
   if (!productId.value || !noteContent.value.trim()) return
 
-  noteSaveError.value = ''
-  noteSaveSuccess.value = false
-
   const success = await productsStore.createNote(productId.value, noteContent.value.trim())
 
   if (success) {
-    noteSaveSuccess.value = true
     isEditingNote.value = false
     toast.success('Nota creada')
-    setTimeout(() => (noteSaveSuccess.value = false), 3000)
   } else {
-    noteSaveError.value = productsStore.noteError || 'Error al guardar nota'
     toast.error('Error al crear nota')
   }
 }
@@ -185,26 +159,18 @@ const handleCreateNote = async () => {
 const handleUpdateNote = async () => {
   if (!productId.value || !noteContent.value.trim()) return
 
-  noteSaveError.value = ''
-  noteSaveSuccess.value = false
-
   const success = await productsStore.updateNote(productId.value, noteContent.value.trim())
 
   if (success) {
-    noteSaveSuccess.value = true
     isEditingNote.value = false
     toast.success('Nota actualizada')
-    setTimeout(() => (noteSaveSuccess.value = false), 3000)
   } else {
-    noteSaveError.value = productsStore.noteError || 'Error al actualizar nota'
     toast.error('Error al actualizar nota')
   }
 }
 
 const handleDeleteNote = async () => {
   if (!productId.value || !confirm('¿Estás seguro de eliminar esta nota?')) return
-
-  noteSaveError.value = ''
 
   const success = await productsStore.deleteNote(productId.value)
 
@@ -213,7 +179,6 @@ const handleDeleteNote = async () => {
     isEditingNote.value = false
     toast.success('Nota eliminada')
   } else {
-    noteSaveError.value = productsStore.noteError || 'Error al eliminar nota'
     toast.error('Error al eliminar nota')
   }
 }
@@ -421,23 +386,6 @@ const handleCancelEdit = () => {
           </div>
         </div>
 
-        <!-- Mensajes de análisis -->
-        <div v-if="analyzeError || analyzeSuccess" class="space-y-3">
-          <div
-            v-if="analyzeSuccess"
-            class="bg-primary-500/20 border border-primary-500 text-primary-300 px-4 py-3 rounded-lg flex items-center gap-3"
-          >
-            <div v-if="isAnalyzing" class="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-400"></div>
-            {{ analyzeSuccess }}
-          </div>
-          <div
-            v-if="analyzeError"
-            class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
-          >
-            {{ analyzeError }}
-          </div>
-        </div>
-
         <!-- Card para analizar con IA (cuando no está analizado) -->
         <div
           v-if="!productsStore.currentProduct.analyzed && ollamaStatus"
@@ -618,14 +566,6 @@ const handleCancelEdit = () => {
               rows="6"
               class="w-full px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             ></textarea>
-
-            <!-- Mensajes de éxito/error -->
-            <div v-if="noteSaveSuccess" class="text-sm text-green-400">
-              ✓ Nota guardada correctamente
-            </div>
-            <div v-if="noteSaveError" class="text-sm text-red-400">
-              {{ noteSaveError }}
-            </div>
 
             <!-- Botones -->
             <div class="flex gap-2">

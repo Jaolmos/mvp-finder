@@ -400,34 +400,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Mensajes de sincronización y análisis -->
-      <div v-if="syncMessage || syncError || analyzeMessage || analyzeError" class="mb-6 space-y-3">
-        <div
-          v-if="syncMessage"
-          class="bg-secondary-500/20 border border-secondary-500 text-secondary-300 px-4 py-3 rounded-lg"
-        >
-          {{ syncMessage }}
-        </div>
-        <div
-          v-if="syncError"
-          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
-        >
-          {{ syncError }}
-        </div>
-        <div
-          v-if="analyzeMessage"
-          class="bg-primary-500/20 border border-primary-500 text-primary-300 px-4 py-3 rounded-lg"
-        >
-          {{ analyzeMessage }}
-        </div>
-        <div
-          v-if="analyzeError"
-          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
-        >
-          {{ analyzeError }}
-        </div>
-      </div>
-
       <!-- Estado de Ollama -->
       <div v-if="ollamaStatus" class="mb-6">
         <div

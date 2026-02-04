@@ -162,22 +162,6 @@ const handleSyncTopic = async (topicId: number) => {
         </button>
       </div>
 
-      <!-- Mensajes de sincronización -->
-      <div v-if="syncMessage || syncError" class="mb-6">
-        <div
-          v-if="syncMessage"
-          class="bg-secondary-500/20 border border-secondary-500 text-secondary-300 px-4 py-3 rounded-lg"
-        >
-          {{ syncMessage }}
-        </div>
-        <div
-          v-if="syncError"
-          class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg"
-        >
-          {{ syncError }}
-        </div>
-      </div>
-
       <!-- Estado de carga -->
       <div v-if="loading" class="flex justify-center items-center py-12">
         <div class="text-dark-400">Cargando topics...</div>
