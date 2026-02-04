@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import { useProductsStore } from '@/stores/products'
 import { useToast } from '@/composables/useToast'
+import { useDebounce } from '@/composables/useDebounce'
 
 const router = useRouter()
 const route = useRoute()
 const productsStore = useProductsStore()
 const toast = useToast()
+
+// Debounced search handler
+const debouncedSearch = useDebounce(() => {
+  applyFilters()
+}, 400)
 
 // Filtros locales
 const searchQuery = ref('')
@@ -111,8 +117,19 @@ watch(() => route.query, async (newQuery) => {
   })
 }, { deep: true })
 
+// Watch searchQuery para búsqueda en tiempo real
+watch(searchQuery, () => {
+  debouncedSearch.debounce('')
+})
+
+// Limpiar debounce al desmontar componente
+onUnmounted(() => {
+  debouncedSearch.cancel()
+})
+
 // Aplicar filtros
 const applyFilters = async () => {
+  debouncedSearch.cancel() // Cancel pending debounce when manually applying
   await productsStore.fetchProducts({
     search: searchQuery.value || undefined,
     topic: selectedTopic.value || undefined,
