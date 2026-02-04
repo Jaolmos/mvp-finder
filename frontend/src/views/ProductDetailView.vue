@@ -5,10 +5,12 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { useProductsStore } from '@/stores/products'
 import { scraperService } from '@/services'
 import type { OllamaStatus } from '@/services/scraper'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const productsStore = useProductsStore()
+const toast = useToast()
 
 const productId = computed(() => parseInt(route.params.id as string))
 
@@ -41,6 +43,7 @@ const handleAnalyzeProduct = async () => {
 
     // Esperar un poco para que el análisis se complete
     analyzeSuccess.value = 'Analizando...'
+    toast.info('Analizando producto...')
 
     // Polling para verificar cuando termine el análisis
     const maxAttempts = 20
@@ -53,6 +56,7 @@ const handleAnalyzeProduct = async () => {
       if (productsStore.currentProduct?.analyzed) {
         isAnalyzing.value = false
         analyzeSuccess.value = 'Análisis completado'
+        toast.success('Análisis completado')
         setTimeout(() => {
           analyzeSuccess.value = ''
         }, 3000)
@@ -65,6 +69,7 @@ const handleAnalyzeProduct = async () => {
         isAnalyzing.value = false
         analyzeSuccess.value = ''
         analyzeError.value = 'El análisis está tardando más de lo esperado. Recarga la página para ver el resultado.'
+        toast.warning('El análisis está tardando más de lo esperado')
         setTimeout(() => {
           analyzeError.value = ''
         }, 5000)
@@ -75,6 +80,7 @@ const handleAnalyzeProduct = async () => {
   } catch (error: any) {
     isAnalyzing.value = false
     analyzeError.value = error.response?.data?.message || 'Error al analizar el producto'
+    toast.error('Error al analizar producto')
     setTimeout(() => {
       analyzeError.value = ''
     }, 5000)
@@ -111,7 +117,9 @@ const formattedDate = computed(() => {
 // Toggle favorito
 const handleToggleFavorite = async () => {
   if (productsStore.currentProduct) {
+    const wasFavorite = productsStore.currentProduct.is_favorite
     await productsStore.toggleFavorite(productsStore.currentProduct.id)
+    toast.success(wasFavorite ? 'Eliminado de favoritos' : 'Añadido a favoritos')
   }
 }
 
@@ -145,8 +153,10 @@ const handleDeleteProduct = async () => {
   const success = await productsStore.deleteProduct(productsStore.currentProduct.id)
 
   if (success) {
+    toast.success('Producto eliminado')
     router.push({ name: 'products' })
   } else {
+    toast.error('Error al eliminar producto')
     isDeleting.value = false
     showDeleteConfirm.value = false
   }
@@ -164,9 +174,11 @@ const handleCreateNote = async () => {
   if (success) {
     noteSaveSuccess.value = true
     isEditingNote.value = false
+    toast.success('Nota creada')
     setTimeout(() => (noteSaveSuccess.value = false), 3000)
   } else {
     noteSaveError.value = productsStore.noteError || 'Error al guardar nota'
+    toast.error('Error al crear nota')
   }
 }
 
@@ -181,9 +193,11 @@ const handleUpdateNote = async () => {
   if (success) {
     noteSaveSuccess.value = true
     isEditingNote.value = false
+    toast.success('Nota actualizada')
     setTimeout(() => (noteSaveSuccess.value = false), 3000)
   } else {
     noteSaveError.value = productsStore.noteError || 'Error al actualizar nota'
+    toast.error('Error al actualizar nota')
   }
 }
 
@@ -197,8 +211,10 @@ const handleDeleteNote = async () => {
   if (success) {
     noteContent.value = ''
     isEditingNote.value = false
+    toast.success('Nota eliminada')
   } else {
     noteSaveError.value = productsStore.noteError || 'Error al eliminar nota'
+    toast.error('Error al eliminar nota')
   }
 }
 
