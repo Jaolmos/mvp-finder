@@ -343,7 +343,7 @@ describe('ProductDetailView', () => {
       expect(analyzingBtn?.attributes('disabled')).toBeDefined()
     })
 
-    it('muestra error si falla el análisis', async () => {
+    it('maneja error si falla el análisis', async () => {
       vi.mocked(scraperService.analyzeProducts).mockRejectedValue({
         response: { data: { message: 'Error de conexión con Ollama' } }
       })
@@ -359,7 +359,10 @@ describe('ProductDetailView', () => {
       await analyzeBtn?.trigger('click')
       await flushPromises()
 
-      expect(wrapper.text()).toContain('Error de conexión con Ollama')
+      // El error ahora se muestra mediante toast, no inline
+      // Verificar que el botón vuelve a estar disponible
+      const analyzeBtn2 = wrapper.findAll('button').find(btn => btn.text().includes('Analizar con IA'))
+      expect(analyzeBtn2?.attributes('disabled')).toBeUndefined()
     })
   })
 
