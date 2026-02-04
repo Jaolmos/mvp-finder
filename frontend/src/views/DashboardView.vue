@@ -18,6 +18,10 @@ const isSyncing = ref(false)
 const syncMessage = ref('')
 const syncError = ref('')
 
+// Polling de sincronización
+const initialProductCount = ref(0)
+let syncPollingInterval: ReturnType<typeof setInterval> | null = null
+
 // Estado de análisis IA
 const isAnalyzing = ref(false)
 const analyzeMessage = ref('')
@@ -169,6 +173,51 @@ const handleProductClick = (id: number) => {
   router.push({ name: 'product-detail', params: { id } })
 }
 
+// Iniciar polling para detectar cuando termina la sincronización
+const startSyncPolling = () => {
+  const maxPolls = 20 // 60 segundos máximo (20 * 3 segundos)
+  let pollCount = 0
+
+  syncPollingInterval = setInterval(async () => {
+    pollCount++
+
+    try {
+      const stats = await productService.getStats()
+      const currentCount = stats.total_products
+
+      // Si el count cambió, la sincronización terminó
+      if (currentCount > initialProductCount.value || pollCount >= maxPolls) {
+        stopSyncPolling()
+      }
+    } catch (error) {
+      console.error('Error al consultar progreso de sync:', error)
+    }
+  }, 3000) // Cada 3 segundos
+}
+
+// Detener polling y finalizar sincronización
+const stopSyncPolling = async () => {
+  if (syncPollingInterval) {
+    clearInterval(syncPollingInterval)
+    syncPollingInterval = null
+  }
+
+  // Recargar datos finales
+  await Promise.all([
+    productsStore.fetchProducts({ page_size: 10 }),
+    loadStats()
+  ])
+
+  isSyncing.value = false
+  syncMessage.value = 'Sincronización completada'
+  toast.success('Sincronización completada')
+
+  // Limpiar mensaje después de 3 segundos
+  setTimeout(() => {
+    syncMessage.value = ''
+  }, 3000)
+}
+
 // Sincronizar productos de Product Hunt
 const handleSync = async () => {
   try {
@@ -176,34 +225,24 @@ const handleSync = async () => {
     syncError.value = ''
     syncMessage.value = ''
 
-    const response = await scraperService.syncProducts()
-    syncMessage.value = response.message
+    // Guardar count inicial
+    initialProductCount.value = globalStats.value?.total_products ?? 0
+
+    await scraperService.syncProducts()
+    syncMessage.value = 'Sincronizando productos...'
     toast.info('Sincronizando productos...')
 
-    // Esperar 3 segundos y recargar productos y stats
-    setTimeout(async () => {
-      await Promise.all([
-        productsStore.fetchProducts({ page_size: 10 }),
-        loadStats()
-      ])
-      syncMessage.value = 'Sincronización completada'
-      toast.success('Sincronización completada')
-
-      // Limpiar mensaje después de 3 segundos
-      setTimeout(() => {
-        syncMessage.value = ''
-      }, 3000)
-    }, 3000)
+    // Iniciar polling para detectar cuando termine
+    startSyncPolling()
   } catch (error: any) {
     syncError.value = error.response?.data?.message || 'Error al sincronizar productos'
     toast.error('Error al sincronizar')
+    isSyncing.value = false
 
     // Limpiar error después de 5 segundos
     setTimeout(() => {
       syncError.value = ''
     }, 5000)
-  } finally {
-    isSyncing.value = false
   }
 }
 
@@ -314,6 +353,10 @@ onUnmounted(() => {
   if (pollingInterval) {
     clearInterval(pollingInterval)
     pollingInterval = null
+  }
+  if (syncPollingInterval) {
+    clearInterval(syncPollingInterval)
+    syncPollingInterval = null
   }
 })
 </script>
