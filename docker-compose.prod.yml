@@ -54,6 +54,7 @@ services:
     build:
       context: ./backend
       dockerfile: ../docker/backend/Dockerfile.prod
+      target: api
     container_name: mvp_finder_backend_prod
     restart: unless-stopped
     ports:
@@ -96,7 +97,8 @@ services:
   celery-worker:
     build:
       context: ./backend
-      dockerfile: ../docker/celery/Dockerfile.prod
+      dockerfile: ../docker/backend/Dockerfile.prod
+      target: celery
     container_name: mvp_finder_celery_prod
     restart: unless-stopped
     environment:

@@ -49,8 +49,9 @@ services:
   celery-worker:
     build:
       context: .
-      dockerfile: docker/celery/Dockerfile
+      dockerfile: docker/backend/Dockerfile
     container_name: mvp_finder_celery
+    command: ["uv", "run", "celery", "-A", "config", "worker", "--loglevel=info"]
     env_file:
       - .env
     depends_on:

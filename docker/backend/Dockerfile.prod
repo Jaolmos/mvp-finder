@@ -1,6 +1,6 @@
 # ============================================
 # MVP Finder - Backend Production Dockerfile
-# Multi-stage build para imagen optimizada
+# Multi-stage build con targets para API y Celery
 # ============================================
 
 # Stage 1: Builder
@@ -30,9 +30,9 @@ ENV DJANGO_SECRET_KEY=build-time-secret-key
 RUN uv run manage.py collectstatic --noinput
 
 # ============================================
-# Stage 2: Runtime
+# Stage 2: Base Runtime (compartido)
 # ============================================
-FROM python:3.14-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS base
 
 WORKDIR /app
 
@@ -53,6 +53,11 @@ RUN chown -R appuser:appuser /app
 
 USER appuser
 
+# ============================================
+# Target: API (Gunicorn)
+# ============================================
+FROM base AS api
+
 EXPOSE 8000
 
 # Gunicorn optimizado para Raspberry Pi (2 workers, 4 threads)
@@ -66,3 +71,13 @@ CMD ["gunicorn", "config.wsgi:application", \
      "--error-logfile", "-", \
      "--capture-output", \
      "--timeout", "120"]
+
+# ============================================
+# Target: Celery Worker
+# ============================================
+FROM base AS celery
+
+# Celery worker con concurrencia optimizada para Raspberry Pi
+CMD ["celery", "-A", "config", "worker", \
+     "--loglevel=info", \
+     "--concurrency=2"]
