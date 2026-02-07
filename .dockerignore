@@ -1,4 +1,19 @@
+# ===========================================
+# DOCKERIGNORE - MVP Finder
+# ===========================================
+# Excluye archivos innecesarios del contexto de build
+# Reduce tamaño y tiempo de build significativamente
+
+# -------------------------------------------
+# Git
+# -------------------------------------------
+.git/
+.gitignore
+.gitattributes
+
+# -------------------------------------------
 # Python
+# -------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,55 +34,98 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.manifest
+*.spec
+pip-log.txt
 
 # Virtual environments
 .venv/
 venv/
 ENV/
+env/
 
+# Testing Python
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+.pytype/
+
+# -------------------------------------------
 # Django
+# -------------------------------------------
 *.log
 db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
 
-# Environment
-.env
-.env.local
-.env.*.local
+# -------------------------------------------
+# Node.js / Frontend
+# -------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+frontend/dist/
+frontend/coverage/
 
-# IDE
+# -------------------------------------------
+# Environment / Secrets
+# -------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# -------------------------------------------
+# IDE / Editors
+# -------------------------------------------
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
+.project
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# -------------------------------------------
+# OS Files
+# -------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Tests
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
+# -------------------------------------------
+# Documentation (no necesaria en imagen)
+# -------------------------------------------
+*.md
+!README.md
+docs/
 
-# Git
-.git/
-.gitignore
-
-# Private
+# -------------------------------------------
+# Project specific
+# -------------------------------------------
 private/
-
-# Claude
-claude/
+CLAUDE.md
 .claude/
 
-# Frontend
-frontend/
-node_modules/
-
-# Docker
+# -------------------------------------------
+# Docker (evitar recursión)
+# -------------------------------------------
+docker-compose*.yml
+docker-compose*.yaml
 docker-compose.override.yml
