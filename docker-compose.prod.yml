@@ -2,13 +2,14 @@
 # MVP Finder - Docker Compose Production
 # ============================================
 # Uso: docker compose -f docker-compose.prod.yml up -d
+# Host Nginx de Raspberry Pi hace el routing a los puertos expuestos
 # ============================================
 
 name: mvp-finder-prod
 
 services:
   # ============================================
-  # Base de Datos
+  # Base de Datos (solo acceso interno)
   # ============================================
   postgres:
     image: postgres:16-alpine
@@ -26,11 +27,10 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - backend_network
-    # NO exponer puerto al host en produccion
+      - app_network
 
   # ============================================
-  # Cache y Message Broker
+  # Cache y Message Broker (solo acceso interno)
   # ============================================
   redis:
     image: redis:7-alpine
@@ -45,11 +45,10 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - backend_network
-    # NO exponer puerto al host en produccion
+      - app_network
 
   # ============================================
-  # Backend API (Gunicorn)
+  # Backend API (Gunicorn) - Puerto 8000
   # ============================================
   backend:
     build:
@@ -57,6 +56,8 @@ services:
       dockerfile: ../docker/backend/Dockerfile.prod
     container_name: mvp_finder_backend_prod
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
@@ -87,8 +88,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - backend_network
-    # Puerto interno, Nginx hace proxy
+      - app_network
 
   # ============================================
   # Celery Worker
@@ -119,7 +119,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - backend_network
+      - app_network
 
   # ============================================
   # Ollama (IA Local)
@@ -141,11 +141,10 @@ services:
         limits:
           memory: 4G
     networks:
-      - backend_network
-    # NO exponer puerto al host en produccion
+      - app_network
 
   # ============================================
-  # Frontend (Nginx + Static Build)
+  # Frontend (Nginx + Static Build) - Puerto 3000
   # ============================================
   frontend:
     build:
@@ -153,28 +152,10 @@ services:
       dockerfile: docker/frontend/Dockerfile.prod
     container_name: mvp_finder_frontend_prod
     restart: unless-stopped
-    networks:
-      - frontend_network
-    # Puerto interno, Nginx hace proxy
-
-  # ============================================
-  # Nginx Reverse Proxy
-  # ============================================
-  nginx:
-    image: nginx:alpine
-    container_name: mvp_finder_nginx_prod
-    restart: unless-stopped
     ports:
-      - "8080:80"
-    volumes:
-      - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - static_volume:/app/staticfiles:ro
-    depends_on:
-      - backend
-      - frontend
+      - "3000:80"
     networks:
-      - frontend_network
-      - backend_network
+      - app_network
 
 volumes:
   postgres_data:
@@ -183,7 +164,5 @@ volumes:
   ollama_data:
 
 networks:
-  frontend_network:
-    driver: bridge
-  backend_network:
+  app_network:
     driver: bridge
