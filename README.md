@@ -76,10 +76,6 @@ docker compose exec backend uv run pytest -v
 docker compose exec frontend npm run test:unit -- --run
 ```
 
-## Desarrollo
-
-Ver `CLAUDE.md` para convenciones de código, estructura del proyecto y guías de desarrollo.
-
 ## Licencia
 
-Privado - Todos los derechos reservados
+MIT
