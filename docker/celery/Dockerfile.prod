@@ -1,0 +1,42 @@
+# ============================================
+# MVP Finder - Celery Worker Production Dockerfile
+# Reutiliza el mismo build que backend
+# ============================================
+
+# Stage 1: Builder (identico a backend)
+# ============================================
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+
+ENV UV_SYSTEM_PYTHON=0
+RUN uv sync --frozen --no-cache --no-dev
+
+COPY . .
+
+# ============================================
+# Stage 2: Runtime
+# ============================================
+FROM python:3.14-slim-bookworm AS runtime
+
+WORKDIR /app
+
+RUN useradd -m -u 1000 appuser
+
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app /app
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+# Celery worker con concurrencia optimizada para Raspberry Pi
+CMD ["celery", "-A", "config", "worker", \
+     "--loglevel=info", \
+     "--concurrency=2"]

@@ -1,0 +1,68 @@
+# ============================================
+# MVP Finder - Backend Production Dockerfile
+# Multi-stage build para imagen optimizada
+# ============================================
+
+# Stage 1: Builder
+# ============================================
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
+
+WORKDIR /app
+
+# Instalar dependencias del sistema para compilar
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar solo archivos de dependencias (cache de Docker)
+COPY pyproject.toml uv.lock ./
+
+# Instalar dependencias en .venv local (no en sistema)
+ENV UV_SYSTEM_PYTHON=0
+RUN uv sync --frozen --no-cache --no-dev
+
+# Copiar codigo fuente
+COPY . .
+
+# Collectstatic (sin DEBUG)
+ENV DJANGO_SETTINGS_MODULE=config.settings.production
+ENV DJANGO_SECRET_KEY=build-time-secret-key
+RUN uv run manage.py collectstatic --noinput
+
+# ============================================
+# Stage 2: Runtime
+# ============================================
+FROM python:3.14-slim-bookworm AS runtime
+
+WORKDIR /app
+
+# Crear usuario no-root
+RUN useradd -m -u 1000 appuser
+
+# Copiar virtual env y codigo desde builder
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app /app
+
+# Configurar PATH para usar venv
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Cambiar ownership
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8000
+
+# Gunicorn optimizado para Raspberry Pi (2 workers, 4 threads)
+CMD ["gunicorn", "config.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "2", \
+     "--threads", "4", \
+     "--worker-class", "gthread", \
+     "--worker-tmp-dir", "/dev/shm", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--capture-output", \
+     "--timeout", "120"]

@@ -1,0 +1,189 @@
+# ============================================
+# MVP Finder - Docker Compose Production
+# ============================================
+# Uso: docker compose -f docker-compose.prod.yml up -d
+# ============================================
+
+name: mvp-finder-prod
+
+services:
+  # ============================================
+  # Base de Datos
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: mvp_finder_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_network
+    # NO exponer puerto al host en produccion
+
+  # ============================================
+  # Cache y Message Broker
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: mvp_finder_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_network
+    # NO exponer puerto al host en produccion
+
+  # ============================================
+  # Backend API (Gunicorn)
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile.prod
+    container_name: mvp_finder_backend_prod
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=postgres
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - PRODUCT_HUNT_API_KEY=${PRODUCT_HUNT_API_KEY}
+      - PRODUCT_HUNT_API_SECRET=${PRODUCT_HUNT_API_SECRET}
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+    volumes:
+      - static_volume:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/docs/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - backend_network
+    # Puerto interno, Nginx hace proxy
+
+  # ============================================
+  # Celery Worker
+  # ============================================
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: ../docker/celery/Dockerfile.prod
+    container_name: mvp_finder_celery_prod
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=postgres
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PRODUCT_HUNT_API_KEY=${PRODUCT_HUNT_API_KEY}
+      - PRODUCT_HUNT_API_SECRET=${PRODUCT_HUNT_API_SECRET}
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_network
+
+  # ============================================
+  # Ollama (IA Local)
+  # ============================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mvp_finder_ollama_prod
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    networks:
+      - backend_network
+    # NO exponer puerto al host en produccion
+
+  # ============================================
+  # Frontend (Nginx + Static Build)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.prod
+    container_name: mvp_finder_frontend_prod
+    restart: unless-stopped
+    networks:
+      - frontend_network
+    # Puerto interno, Nginx hace proxy
+
+  # ============================================
+  # Nginx Reverse Proxy
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: mvp_finder_nginx_prod
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - frontend_network
+      - backend_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  ollama_data:
+
+networks:
+  frontend_network:
+    driver: bridge
+  backend_network:
+    driver: bridge

@@ -15,4 +15,30 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    // Sin source maps en produccion
+    sourcemap: false,
+    // Minificacion con esbuild (mas rapido)
+    minify: 'esbuild',
+    // Chunk splitting para mejor cache
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'axios': ['axios'],
+        },
+      },
+    },
+    // Warning de tamano de chunk
+    chunkSizeWarningLimit: 500,
+  },
+  // API proxy en desarrollo
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
