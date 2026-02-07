@@ -32,8 +32,23 @@ CACHES = {
     }
 }
 
-# Static files
+# Static files con WhiteNoise
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise middleware (añadir al MIDDLEWARE en base.py para producción)
+# Se debe añadir DESPUÉS de SecurityMiddleware en base.py o aquí
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise después de SecurityMiddleware
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 # Seguridad
 SECURE_BROWSER_XSS_FILTER = True
