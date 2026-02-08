@@ -3,7 +3,7 @@ import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useProductsStore } from '@/stores/products'
-import { scraperService } from '@/services'
+import { scraperService, productService } from '@/services'
 import type { OllamaStatus } from '@/services/scraper'
 import { useToast } from '@/composables/useToast'
 
@@ -40,18 +40,23 @@ const handleAnalyzeProduct = async () => {
     // Esperar un poco para que el análisis se complete
     toast.info('Analizando producto...')
 
-    // Polling para verificar cuando termine el análisis
+    // Polling silencioso (sin tocar loading) para verificar cuando termine
     const maxAttempts = 20
     let attempts = 0
 
     const checkAnalysis = async () => {
       attempts++
-      await productsStore.fetchProduct(productId.value)
+      try {
+        const product = await productService.get(productId.value)
+        productsStore.currentProduct = product
 
-      if (productsStore.currentProduct?.analyzed) {
-        isAnalyzing.value = false
-        toast.success('Análisis completado')
-        return
+        if (product.analyzed) {
+          isAnalyzing.value = false
+          toast.success('Análisis completado')
+          return
+        }
+      } catch {
+        // Ignorar errores de polling, se reintenta
       }
 
       if (attempts < maxAttempts) {
