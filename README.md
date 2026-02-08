@@ -25,7 +25,7 @@ Desplegado en produccion sobre una [Raspberry Pi 5](https://github.com/Jaolmos/r
 - **Favoritos y notas personales** -- Marca productos interesantes y anade notas privadas por producto
 - **Filtros avanzados** -- Por topic, estado de analisis, favoritos, potencial minimo y busqueda por texto
 - **Ordenamiento multiple** -- Por fecha, votos o puntuacion de potencial (ascendente/descendente)
-- **Busqueda en tiempo real** -- Debounce de 400ms con busqueda inmediata al pulsar Enter
+- **Busqueda en tiempo real** -- Filtrado instantaneo mientras se escribe
 - **Autenticacion JWT** -- Login con refresh automatico de tokens
 - **API REST documentada** -- Swagger UI disponible en `/api/docs/`
 - **Notificaciones toast** -- Feedback visual en todas las acciones del usuario
