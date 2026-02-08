@@ -41,7 +41,8 @@ const handleAnalyzeProduct = async () => {
     toast.info('Analizando producto...')
 
     // Polling silencioso (sin tocar loading) para verificar cuando termine
-    const maxAttempts = 20
+    // Ollama puede tardar varios minutos → 60 intentos × 5s = 5 min max
+    const maxAttempts = 60
     let attempts = 0
 
     const checkAnalysis = async () => {
@@ -60,10 +61,10 @@ const handleAnalyzeProduct = async () => {
       }
 
       if (attempts < maxAttempts) {
-        setTimeout(checkAnalysis, 3000)
+        setTimeout(checkAnalysis, 5000)
       } else {
         isAnalyzing.value = false
-        toast.warning('El análisis está tardando más de lo esperado')
+        toast.warning('El análisis está tardando más de lo esperado. Recarga la página para ver los resultados.')
       }
     }
 
