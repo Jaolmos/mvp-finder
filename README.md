@@ -54,8 +54,8 @@ Desplegado en produccion sobre una [Raspberry Pi 5](https://github.com/Jaolmos/r
 ## Instalacion
 
 ```bash
-git clone <repo-url>
-cd mvp_finder
+git clone https://github.com/Jaolmos/mvp-finder.git
+cd mvp-finder
 ```
 
 Copiar el archivo de variables de entorno y configurar las credenciales:
