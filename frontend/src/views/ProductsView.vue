@@ -24,6 +24,7 @@ const minPotential = ref<number | undefined>(undefined)
 const selectedOrdering = ref<string>('-created_at_source')
 const showOnlyFavorites = ref(false)
 const showOnlyAnalyzed = ref(false)
+const selectedTag = ref<string | undefined>(undefined)
 
 // Opciones de ordenamiento
 const orderingOptions = [
@@ -74,6 +75,9 @@ onMounted(async () => {
       selectedOrdering.value = ordering
     }
   }
+  if (route.query.tag) {
+    selectedTag.value = route.query.tag as string
+  }
 
   // Aplicar filtros desde query params
   await productsStore.fetchProducts({
@@ -82,7 +86,8 @@ onMounted(async () => {
     search: searchQuery.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
     min_potential: minPotential.value || undefined,
-    ordering: selectedOrdering.value
+    ordering: selectedOrdering.value,
+    tag: selectedTag.value || undefined
   })
 })
 
@@ -106,6 +111,8 @@ watch(() => route.query, async (newQuery) => {
     selectedOrdering.value = '-created_at_source'
   }
 
+  selectedTag.value = (newQuery.tag as string) || undefined
+
   // Recargar productos con los nuevos filtros
   await productsStore.fetchProducts({
     analyzed: showOnlyAnalyzed.value || undefined,
@@ -113,7 +120,8 @@ watch(() => route.query, async (newQuery) => {
     search: searchQuery.value || undefined,
     is_favorite: showOnlyFavorites.value || undefined,
     min_potential: minPotential.value || undefined,
-    ordering: selectedOrdering.value
+    ordering: selectedOrdering.value,
+    tag: selectedTag.value || undefined
   })
 }, { deep: true })
 
@@ -137,8 +145,15 @@ const applyFilters = async () => {
     ordering: selectedOrdering.value,
     is_favorite: showOnlyFavorites.value || undefined,
     analyzed: showOnlyAnalyzed.value || undefined,
+    tag: selectedTag.value || undefined,
     page: 1 // Resetear a página 1 cuando se aplican filtros
   })
+}
+
+// Quitar filtro de tag
+const clearTag = () => {
+  selectedTag.value = undefined
+  router.replace({ query: { ...route.query, tag: undefined } })
 }
 
 // Limpiar filtros
@@ -149,6 +164,7 @@ const clearFilters = async () => {
   selectedOrdering.value = '-created_at_source'
   showOnlyFavorites.value = false
   showOnlyAnalyzed.value = false
+  selectedTag.value = undefined
   productsStore.resetFilters()
   await productsStore.fetchProducts({ ordering: '-created_at_source' })
 }
@@ -338,6 +354,23 @@ const pageNumbersMobile = computed(() => {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Badge de tag activo -->
+      <div v-if="selectedTag" class="flex items-center gap-2 mb-6">
+        <span class="text-sm text-dark-300">Filtrando por tag:</span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-primary-500/20 text-primary-300 border border-primary-500/30">
+          {{ selectedTag }}
+          <button
+            @click="clearTag"
+            class="ml-1 hover:text-white transition-colors"
+            aria-label="Quitar filtro de tag"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </span>
       </div>
 
       <!-- Loading state -->

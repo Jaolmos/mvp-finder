@@ -47,6 +47,7 @@ export interface ProductFilters {
   search?: string
   is_favorite?: boolean
   ordering?: string
+  tag?: string
   page?: number
   page_size?: number
 }

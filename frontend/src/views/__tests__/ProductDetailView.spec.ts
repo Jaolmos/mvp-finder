@@ -285,7 +285,7 @@ describe('ProductDetailView', () => {
         mockOllamaReady
       )
 
-      const tagElements = wrapper.findAll('span').filter(el =>
+      const tagElements = wrapper.findAll('a').filter(el =>
         el.text() === 'testing' || el.text() === 'automation' || el.text() === 'devtools'
       )
 
@@ -323,7 +323,7 @@ describe('ProductDetailView', () => {
       )
 
       // Debe mostrar solo 10 tags inicialmente
-      const tagElements = wrapper.findAll('span').filter(el => el.text().startsWith('tag'))
+      const tagElements = wrapper.findAll('a').filter(el => el.text().startsWith('tag'))
       expect(tagElements.length).toBe(10)
 
       // Debe mostrar botón "+5 más"
@@ -351,7 +351,7 @@ describe('ProductDetailView', () => {
       await flushPromises()
 
       // Debe mostrar todos los 15 tags
-      const tagElements = wrapper.findAll('span').filter(el => el.text().startsWith('tag'))
+      const tagElements = wrapper.findAll('a').filter(el => el.text().startsWith('tag'))
       expect(tagElements.length).toBe(15)
 
       // El botón debe cambiar a "Ver menos"
@@ -369,6 +369,17 @@ describe('ProductDetailView', () => {
       const buttons = wrapper.findAll('button')
       const moreButton = buttons.find(btn => btn.text().includes('más'))
       expect(moreButton).toBeUndefined()
+    })
+
+    it('los tags son enlaces que navegan a /products?tag=xxx', async () => {
+      const wrapper = await mountProductDetailView(
+        { currentProduct: mockAnalyzedProduct },
+        mockOllamaReady
+      )
+
+      const tagLink = wrapper.findAll('a').find(el => el.text() === 'testing')
+      expect(tagLink?.exists()).toBe(true)
+      expect(tagLink?.attributes('href')).toBe('/products?tag=testing')
     })
   })
 

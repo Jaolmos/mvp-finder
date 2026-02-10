@@ -85,6 +85,24 @@ class TestListProducts:
                 break
         assert found, "No se encontró ningún producto con 'Assistant' en el título"
 
+    def test_list_products_filter_by_tag(self, authenticated_client, analyzed_product):
+        """Test filtrar products por tag."""
+        response = authenticated_client.get('/products/?tag=productividad')
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data['count'] >= 1
+        for item in data['items']:
+            assert 'productividad' in item['tags']
+
+    def test_list_products_filter_by_tag_no_results(self, authenticated_client, product):
+        """Test filtrar products por tag inexistente."""
+        response = authenticated_client.get('/products/?tag=nonexistent-tag-xyz')
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data['count'] == 0
+
     def test_list_products_pagination(self, authenticated_client, topic):
         """Test paginación de products."""
         for i in range(25):

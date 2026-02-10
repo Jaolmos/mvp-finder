@@ -105,7 +105,8 @@ def list_products(
     min_potential: Optional[int] = None,
     search: Optional[str] = None,
     is_favorite: Optional[bool] = None,
-    ordering: Optional[str] = None
+    ordering: Optional[str] = None,
+    tag: Optional[str] = None
 ):
     """
     Listar products con filtros y paginación.
@@ -147,6 +148,9 @@ def list_products(
 
     if is_favorite:
         products = products.filter(is_favorite=True)
+
+    if tag:
+        products = products.filter(tags__icontains=tag)
 
     # Aplicar ordenamiento
     valid_orderings = [

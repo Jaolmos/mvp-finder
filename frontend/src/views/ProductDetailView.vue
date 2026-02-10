@@ -553,14 +553,15 @@ const hiddenTagsCount = computed(() => {
             <div v-if="productsStore.currentProduct.tags" class="bg-dark-800/50 rounded-lg p-4">
               <h3 class="text-sm font-medium text-dark-300 mb-3">Tags</h3>
               <div class="flex flex-wrap gap-2">
-                <span
+                <RouterLink
                   v-for="tag in visibleTags"
                   :key="tag"
+                  :to="{ name: 'products', query: { tag } }"
                   :class="getTagColor(tag)"
-                  class="px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:scale-105"
+                  class="px-3 py-1.5 rounded-full text-sm font-medium border transition-all hover:scale-105 cursor-pointer"
                 >
                   {{ tag }}
-                </span>
+                </RouterLink>
 
                 <!-- Botón "Ver más" -->
                 <button

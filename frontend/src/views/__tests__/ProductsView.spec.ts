@@ -270,6 +270,66 @@ describe('ProductsView - Búsqueda en tiempo real', () => {
     // No necesita avanzar tiempo - se dispara inmediatamente
     // Si hubiera debounce, necesitaríamos vi.advanceTimersByTime(400)
   })
+
+  it('muestra badge de tag activo cuando hay query param tag', async () => {
+    await router.push('/products?tag=productividad')
+    await router.isReady()
+
+    const wrapper = mount(ProductsView, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+              products: {
+                products: mockProducts,
+                totalProducts: 1,
+                totalPages: 1,
+                currentPage: 1
+              }
+            }
+          }),
+          router
+        ]
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Filtrando por tag:')
+    expect(wrapper.text()).toContain('productividad')
+  })
+
+  it('pasa el tag como filtro al store al cargar con query param', async () => {
+    await router.push('/products?tag=ia')
+    await router.isReady()
+
+    const wrapper = mount(ProductsView, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+              products: {
+                products: mockProducts,
+                totalProducts: 1,
+                totalPages: 1,
+                currentPage: 1
+              }
+            }
+          }),
+          router
+        ]
+      }
+    })
+
+    await flushPromises()
+
+    const store = useProductsStore()
+    expect(store.fetchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ tag: 'ia' })
+    )
+  })
 })
 
 // Ejecutar: cd frontend && npm run test -- ProductsView.spec.ts
