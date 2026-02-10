@@ -150,7 +150,7 @@ def list_products(
         products = products.filter(is_favorite=True)
 
     if tag:
-        products = products.filter(tags__icontains=tag)
+        products = products.filter(tags__regex=rf'(^|,){tag}(,|$)')
 
     # Aplicar ordenamiento
     valid_orderings = [

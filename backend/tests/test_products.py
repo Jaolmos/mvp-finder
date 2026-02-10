@@ -95,6 +95,16 @@ class TestListProducts:
         for item in data['items']:
             assert 'productividad' in item['tags']
 
+    def test_list_products_filter_by_tag_no_partial_match(self, authenticated_client, analyzed_product):
+        """Test que el filtro por tag no hace match parcial."""
+        # analyzed_product tiene tags='productividad,focus,pomodoro'
+        # 'prod' es subcadena de 'productividad' pero no un tag completo
+        response = authenticated_client.get('/products/?tag=prod')
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data['count'] == 0
+
     def test_list_products_filter_by_tag_no_results(self, authenticated_client, product):
         """Test filtrar products por tag inexistente."""
         response = authenticated_client.get('/products/?tag=nonexistent-tag-xyz')
